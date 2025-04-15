@@ -1,0 +1,6 @@
+embedding_model: all-MiniLM-L6-v2
+top_k: 5
+csv_path: data/papers_combined_with_abstract_and_summary.csv
+faiss_index_path: embeddings/papers_index.faiss
+metadata_path: data/metadata.pkl
+content_fields: ['Title', 'Abstract', 'Summary']
