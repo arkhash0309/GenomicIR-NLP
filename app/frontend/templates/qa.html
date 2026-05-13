@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Ask · GenomicIR{% endblock %}
+{% block content %}
+<section class="panel">
+  <header class="panel-head">
+    <span class="kicker">Service · 03</span>
+    <h1>Question Answering</h1>
+    <p class="lede">Ask a question. We retrieve the most relevant abstracts and extract sentences that best address your query.</p>
+  </header>
+
+  <div id="chat" class="chat"></div>
+
+  <form id="qaForm" class="chat-bar">
+    <input id="qaInput" type="text" placeholder="e.g. How does Cas9 specificity vary across cell types?" required autocomplete="off" />
+    <button class="btn primary" type="submit">Ask</button>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/qa.js') }}"></script>
+{% endblock %}

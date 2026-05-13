@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Retrieve · GenomicIR{% endblock %}
+{% block content %}
+<section class="panel">
+  <header class="panel-head">
+    <span class="kicker">Service · 01</span>
+    <h1>Information Retrieval</h1>
+    <p class="lede">Type a topic, gene, technique, or phenotype. We rank papers by BM25 across titles and abstracts.</p>
+  </header>
+
+  <form id="retrieveForm" class="search-bar" autocomplete="off">
+    <input id="retrieveQuery" type="text" placeholder='e.g. "CRISPR off-target effects in human stem cells"' required />
+    <select id="retrieveK" aria-label="Number of results">
+      <option value="5">Top 5</option>
+      <option value="10" selected>Top 10</option>
+      <option value="20">Top 20</option>
+    </select>
+    <button class="btn primary" type="submit">Search</button>
+  </form>
+
+  <div id="retrieveStatus" class="status"></div>
+  <div id="retrieveResults" class="results"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/retrieve.js') }}"></script>
+{% endblock %}

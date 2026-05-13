@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Summarize · GenomicIR{% endblock %}
+{% block content %}
+<section class="panel">
+  <header class="panel-head">
+    <span class="kicker">Service · 02</span>
+    <h1>Abstract Summarization</h1>
+    <p class="lede">Paste any abstract (or text) and we'll distill it into the most informative sentences via extractive scoring.</p>
+  </header>
+
+  <form id="summarizeForm" class="stack">
+    <textarea id="summarizeText" rows="9" placeholder="Paste an abstract here..." required></textarea>
+    <div class="row">
+      <label class="control">
+        Sentences:
+        <input id="summarizeN" type="number" min="1" max="8" value="3" />
+      </label>
+      <button class="btn primary" type="submit">Summarize</button>
+    </div>
+  </form>
+
+  <div id="summarizeStatus" class="status"></div>
+  <div id="summarizeResult" class="result-card hidden">
+    <h3>Summary</h3>
+    <p id="summaryText"></p>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/summarize.js') }}"></script>
+{% endblock %}

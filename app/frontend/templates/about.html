@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}About · GenomicIR{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <header class="panel-head">
+    <span class="kicker">About</span>
+    <h1>What is GenomicIR-NLP?</h1>
+  </header>
+
+  <p>GenomicIR-NLP is a research workbench that applies modern NLP techniques to the genomics literature scraped from
+    <a href="https://www.biorxiv.org/collection/genomics" target="_blank" rel="noopener">bioRxiv's genomics collection</a>.
+    It offers three complementary services:</p>
+
+  <ul class="bullets">
+    <li><strong>Information Retrieval</strong> — BM25 ranking across thousands of abstracts.</li>
+    <li><strong>Summarization</strong> — extractive sentence scoring based on term frequency.</li>
+    <li><strong>Question Answering</strong> — retrieval-augmented sentence extraction grounded in the indexed corpus.</li>
+  </ul>
+
+  <h3>Architecture</h3>
+  <pre class="arch"><span class="mono">Flask (Python) ──HTTP──▶ Fastify (TypeScript) ──▶ CSV index (bioRxiv)</span></pre>
+
+  <p class="muted">The frontend is intentionally light — no heavyweight JS framework — so the genomics-themed
+    animations (the DNA helix in the background) stay center stage.</p>
+</section>
+{% endblock %}

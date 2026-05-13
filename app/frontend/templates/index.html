@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div class="hero-inner">
+    <span class="kicker">NLP × Genomics</span>
+    <h1 class="hero-title">
+      Decode the literature of <span class="grad-text">life&nbsp;itself</span>.
+    </h1>
+    <p class="hero-sub">
+      Search, summarize, and converse with thousands of genomics papers scraped from
+      bioRxiv — all from one elegant workbench.
+    </p>
+    <div class="hero-cta">
+      <a class="btn primary" href="{{ url_for('retrieve_page') }}">Start retrieving →</a>
+      <a class="btn ghost" href="{{ url_for('qa_page') }}">Ask a question</a>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value" data-count="{{ stats.paperCount }}">{{ stats.paperCount }}</div>
+        <div class="stat-label">Papers indexed</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" data-count="{{ stats.avgAbstractWords }}">{{ stats.avgAbstractWords }}</div>
+        <div class="stat-label">Avg. abstract words</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" data-count="{{ stats.withSummary }}">{{ stats.withSummary }}</div>
+        <div class="stat-label">Pre-computed summaries</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="services">
+  <h2 class="section-title">Three lenses on the genome</h2>
+  <div class="cards">
+    <a class="card card-retrieve" href="{{ url_for('retrieve_page') }}">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </div>
+      <h3>Information Retrieval</h3>
+      <p>BM25 ranked search across abstracts. Find the most relevant papers for any query.</p>
+      <span class="card-link">Open retriever →</span>
+    </a>
+
+    <a class="card card-summarize" href="{{ url_for('summarize_page') }}">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h16"/></svg>
+      </div>
+      <h3>Summarization</h3>
+      <p>Extractive sentence scoring distills an abstract — or any text — into its essence.</p>
+      <span class="card-link">Open summarizer →</span>
+    </a>
+
+    <a class="card card-qa" href="{{ url_for('qa_page') }}">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 1 1-3.2-6.4L21 3v6h-6"/></svg>
+      </div>
+      <h3>Question Answering</h3>
+      <p>Ask a natural question — retrieval-augmented answers grounded in indexed papers.</p>
+      <span class="card-link">Open chatbot →</span>
+    </a>
+  </div>
+</section>
+
+<section class="pipeline">
+  <h2 class="section-title">The pipeline</h2>
+  <ol class="pipeline-steps">
+    <li><span class="step-n">01</span><div><h4>Scrape</h4><p>bioRxiv genomics papers (titles, authors, DOIs, URLs, abstracts).</p></div></li>
+    <li><span class="step-n">02</span><div><h4>Index</h4><p>Tokenize, build BM25 statistics, attach precomputed summaries.</p></div></li>
+    <li><span class="step-n">03</span><div><h4>Serve</h4><p>Fastify exposes retrieve / summarize / QA over a typed HTTP API.</p></div></li>
+    <li><span class="step-n">04</span><div><h4>Explore</h4><p>This Flask interface — animated, themed, and built for biologists.</p></div></li>
+  </ol>
+</section>
+{% endblock %}
