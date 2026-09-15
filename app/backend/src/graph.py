@@ -34,6 +34,8 @@ def build_graph() -> None:
 
 
 def graph_stats() -> dict:
+    if _G is None:
+        raise RuntimeError("Graph not built — call build_graph() first")
     G = _G
     kinds = nx.get_node_attributes(G, "kind")
     entity_count = sum(1 for k in kinds.values() if k != "paper")
@@ -45,6 +47,8 @@ def graph_stats() -> dict:
 
 
 def get_papers_by_entity(name: str) -> list[int]:
+    if _G is None:
+        raise RuntimeError("Graph not built — call build_graph() first")
     needle = name.lower()
     ids: list[int] = []
     for node, data in _G.nodes(data=True):
@@ -58,6 +62,8 @@ def get_papers_by_entity(name: str) -> list[int]:
 
 
 def get_entity_connections(entity: str) -> list[dict]:
+    if _G is None:
+        raise RuntimeError("Graph not built — call build_graph() first")
     needle = entity.lower()
     conns: dict[str, dict] = {}
     for node in _G.nodes:
@@ -73,6 +79,8 @@ def get_entity_connections(entity: str) -> list[dict]:
 
 
 def get_subgraph(entity_names: list[str]) -> SubgraphResponse:
+    if _G is None:
+        raise RuntimeError("Graph not built — call build_graph() first")
     nodes: list[GraphNode] = []
     edges: list[GraphEdge] = []
     seen: set[str] = set()
@@ -82,15 +90,16 @@ def get_subgraph(entity_names: list[str]) -> SubgraphResponse:
             return
         seen.add(nid)
         d = _G.nodes[nid]
-        kind = d.get("kind", "Entity")
+        kind = d.get("kind", "Gene")
         ntype = kind if kind in ("paper", "Gene", "Disease", "Chemical") else "Gene"
-        nodes.append(GraphNode(id=nid, label=d.get("label", nid)[:40], type=ntype))
+        nodes.append(GraphNode(id=nid, label=d.get("label", nid), type=ntype))
 
     for name in entity_names:
         needle = name.lower()
         matches = [n for n in _G.nodes if _G.nodes[n].get("kind") != "paper" and needle in n.lower()][:3]
         for key in matches:
             _add_node(key)
+            # Add co-occurring entity neighbours (successors via co_occurs_with)
             for nbr in list(_G.successors(key))[:8]:
                 if _G.nodes[nbr].get("kind") != "paper":
                     _add_node(nbr)
@@ -98,4 +107,12 @@ def get_subgraph(entity_names: list[str]) -> SubgraphResponse:
                     edges.append(GraphEdge(source=key, target=nbr,
                                            type=ed.get("rel", "co_occurs_with"),
                                            weight=float(ed.get("weight", 1))))
+            # Add paper nodes that mention this entity (predecessors via mentions)
+            for pred in list(_G.predecessors(key))[:8]:
+                if _G.nodes[pred].get("kind") == "paper":
+                    _add_node(pred)
+                    ed = _G.edges[pred, key]
+                    edges.append(GraphEdge(source=pred, target=key,
+                                           type=ed.get("rel", "mentions"),
+                                           weight=1.0))
     return SubgraphResponse(nodes=nodes, edges=edges)
