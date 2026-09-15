@@ -1,9 +1,13 @@
 from pathlib import Path
+from typing import TYPE_CHECKING
 import numpy as np
 import faiss
 from rank_bm25 import BM25Okapi
 from .models import SearchResult
 from .data_store import get_papers
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer, CrossEncoder
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _FAISS_PATH = _REPO_ROOT / "notebooks" / "5_INFORMATION_RETRIEVAL" / "embeddings" / "papers_index.faiss"
@@ -11,8 +15,8 @@ _EMBED_MODEL = "all-MiniLM-L6-v2"
 _RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 _RRF_K = 60
 
-_embedder = None
-_reranker = None
+_embedder: "SentenceTransformer | None" = None
+_reranker: "CrossEncoder | None" = None
 _faiss_index: faiss.Index | None = None
 _bm25: BM25Okapi | None = None
 
@@ -55,7 +59,7 @@ def hybrid_search(query: str, top_k: int = 5) -> list[SearchResult]:
     bm25_scores = _bm25.get_scores(_tokenize(query))
     bm25_ids = list(map(int, np.argsort(bm25_scores)[::-1][:n]))
 
-    fused = _rrf(faiss_ids, bm25_ids)[:10]
+    fused = _rrf(faiss_ids, bm25_ids)[:max(10, top_k * 2)]
     candidate_ids = [doc_id for doc_id, _ in fused if doc_id < len(papers)]
 
     pairs = [(query, papers[i].abstract[:512]) for i in candidate_ids]
