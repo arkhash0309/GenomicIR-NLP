@@ -7,6 +7,7 @@ CACHE_PATH = Path(__file__).resolve().parent.parent / "data" / "entity_cache.jso
 _bc5cdr = None   # DISEASE, CHEMICAL
 _jnlpba = None   # DNA, RNA, PROTEIN → Gene
 _entity_cache: dict[int, list[dict]] = {}
+_cache_loaded: bool = False
 
 _BC5CDR_MAP = {"DISEASE": "Disease", "CHEMICAL": "Chemical"}
 _JNLPBA_MAP = {"DNA": "Gene", "RNA": "Gene", "PROTEIN": "Gene"}
@@ -46,8 +47,10 @@ def _extract(text: str) -> list[dict]:
 
 
 def build_entity_cache(papers) -> None:
-    if _entity_cache:
+    global _cache_loaded
+    if _cache_loaded:
         return
+    _cache_loaded = True
     for paper in papers:
         _entity_cache[paper.id] = _extract(paper.abstract)
     save_entity_cache()

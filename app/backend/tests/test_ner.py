@@ -25,9 +25,14 @@ def test_extract_gene_entity():
     assert "Gene" in types
 
 
-def test_entity_has_name_and_type(mock_papers):
+def test_entity_has_name_and_type(tmp_path, mock_papers, monkeypatch):
+    from src import ner as ner_module
+    monkeypatch.setattr(ner_module, "CACHE_PATH", tmp_path / "entity_cache.json")
+    monkeypatch.setattr(ner_module, "_entity_cache", {})
+    monkeypatch.setattr(ner_module, "_cache_loaded", False)
     build_entity_cache(mock_papers)
     entities = get_paper_entities(0)
+    assert len(entities) > 0
     for e in entities:
         assert "name" in e
         assert e["type"] in ("Gene", "Disease", "Chemical")
@@ -37,5 +42,6 @@ def test_entity_cache_persists(tmp_path, mock_papers, monkeypatch):
     from src import ner as ner_module
     monkeypatch.setattr(ner_module, "CACHE_PATH", tmp_path / "entity_cache.json")
     monkeypatch.setattr(ner_module, "_entity_cache", {})
+    monkeypatch.setattr(ner_module, "_cache_loaded", False)
     build_entity_cache(mock_papers)
     assert (tmp_path / "entity_cache.json").exists()
