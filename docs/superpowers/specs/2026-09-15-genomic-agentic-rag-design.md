@@ -71,12 +71,14 @@ React 18 + Vite + TailwindCSS  (port 5173)
 **Fields used:** Title, Authors, DOI, Date, Paper URL, Abstract, Summary
 
 **Startup sequence (once, ~30–60s):**
-1. Load CSV → list of `Paper` Pydantic models
-2. Load FAISS index from `5_INFORMATION_RETRIEVAL/embeddings/papers_index.faiss`
-3. Load `all-MiniLM-L6-v2` via sentence-transformers
-4. Build `rank_bm25` BM25Okapi index over `title + abstract` tokens
-5. Run scispaCy `en_ner_bc5cdr_md` over every abstract → per-paper entity cache (persisted to `backend/data/entity_cache.json` so it only runs once)
-6. Build NetworkX directed graph:
+1. Load `metadata.pkl` (pandas DataFrame, row order matches FAISS index) as the canonical ordered paper list
+2. Enrich with Summary column by left-joining against `papers_combined_with_abstract_and_summary.csv` on Title
+3. Build `Paper` Pydantic model list — FAISS index position = paper id
+4. Load FAISS index from `5_INFORMATION_RETRIEVAL/embeddings/papers_index.faiss`
+5. Load `all-MiniLM-L6-v2` via sentence-transformers
+6. Build `rank_bm25` BM25Okapi index over `title + abstract` tokens (same order as FAISS)
+7. Run scispaCy `en_ner_bc5cdr_md` over every abstract → per-paper entity cache (persisted to `backend/data/entity_cache.json` so it only runs once)
+8. Build NetworkX directed graph:
    - Nodes: `Paper` (type=paper) + unique entities (type=gene|disease|chemical)
    - Edges: `Paper → Entity` ("mentions"), `Entity → Entity` ("co_occurs_with", weight = shared paper count)
 
