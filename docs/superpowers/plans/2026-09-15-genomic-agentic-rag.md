@@ -12,7 +12,7 @@
 
 - Python 3.11+; Node 18+
 - All paths relative to repo root `GenomicIR-NLP/`
-- Data source: `5_INFORMATION_RETRIEVAL/data/metadata.pkl` (FAISS row order), `5_INFORMATION_RETRIEVAL/data/papers_combined_with_abstract_and_summary.csv` (Summary enrichment), `5_INFORMATION_RETRIEVAL/embeddings/papers_index.faiss`
+- Data source: `notebooks/5_INFORMATION_RETRIEVAL/data/metadata.pkl` (FAISS row order), `notebooks/5_INFORMATION_RETRIEVAL/data/papers_combined_with_abstract_and_summary.csv` (Summary enrichment), `notebooks/5_INFORMATION_RETRIEVAL/embeddings/papers_index.faiss`
 - FAISS index uses L2 distance; paper ID = FAISS position = `df.iloc[i]` row index after `reset_index(drop=True)`
 - LLM: `claude-sonnet-4-6` via `AsyncAnthropic`
 - `ANTHROPIC_API_KEY` in `app/backend/.env`
@@ -256,8 +256,8 @@ import pandas as pd
 from .models import Paper
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_META = _REPO_ROOT / "5_INFORMATION_RETRIEVAL" / "data" / "metadata.pkl"
-_CSV  = _REPO_ROOT / "5_INFORMATION_RETRIEVAL" / "data" / "papers_combined_with_abstract_and_summary.csv"
+_META = _REPO_ROOT / "notebooks" / "5_INFORMATION_RETRIEVAL" / "data" / "metadata.pkl"
+_CSV  = _REPO_ROOT / "notebooks" / "5_INFORMATION_RETRIEVAL" / "data" / "papers_combined_with_abstract_and_summary.csv"
 
 _papers: list[Paper] = []
 
@@ -373,7 +373,7 @@ from .models import SearchResult
 from .data_store import get_papers
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_FAISS_PATH = _REPO_ROOT / "5_INFORMATION_RETRIEVAL" / "embeddings" / "papers_index.faiss"
+_FAISS_PATH = _REPO_ROOT / "notebooks" / "5_INFORMATION_RETRIEVAL" / "embeddings" / "papers_index.faiss"
 _EMBED_MODEL = "all-MiniLM-L6-v2"
 _RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 _RRF_K = 60
@@ -2614,7 +2614,7 @@ npm run dev                   # http://localhost:5173
 
 ## Data
 
-All source data is in `5_INFORMATION_RETRIEVAL/data/`. The backend reads it directly — no copy needed.
+All source data is in `notebooks/5_INFORMATION_RETRIEVAL/data/`. The backend reads it directly — no copy needed.
 The entity cache (`app/backend/data/entity_cache.json`) is generated on first startup (~5 min) and reused on subsequent starts.
 ```
 

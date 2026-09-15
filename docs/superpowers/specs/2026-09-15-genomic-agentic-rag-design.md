@@ -66,7 +66,7 @@ React 18 + Vite + TailwindCSS  (port 5173)
 
 ## 4. Data Layer
 
-**Source:** `5_INFORMATION_RETRIEVAL/data/papers_combined_with_abstract_and_summary.csv`  
+**Source:** `notebooks/5_INFORMATION_RETRIEVAL/data/papers_combined_with_abstract_and_summary.csv`  
 **Records:** ~7,070 bioRxiv genomics papers  
 **Fields used:** Title, Authors, DOI, Date, Paper URL, Abstract, Summary
 
@@ -74,7 +74,7 @@ React 18 + Vite + TailwindCSS  (port 5173)
 1. Load `metadata.pkl` (pandas DataFrame, row order matches FAISS index) as the canonical ordered paper list
 2. Enrich with Summary column by left-joining against `papers_combined_with_abstract_and_summary.csv` on Title
 3. Build `Paper` Pydantic model list — FAISS index position = paper id
-4. Load FAISS index from `5_INFORMATION_RETRIEVAL/embeddings/papers_index.faiss`
+4. Load FAISS index from `notebooks/5_INFORMATION_RETRIEVAL/embeddings/papers_index.faiss`
 5. Load `all-MiniLM-L6-v2` via sentence-transformers
 6. Build `rank_bm25` BM25Okapi index over `title + abstract` tokens (same order as FAISS)
 7. Run scispaCy `en_ner_bc5cdr_md` over every abstract → per-paper entity cache (persisted to `backend/data/entity_cache.json` so it only runs once)
@@ -221,7 +221,7 @@ GenomicIR-NLP/
 ├── 2_DATA_STORE/          (unchanged)
 ├── 3_SUMMARIZATION_MODEL/ (unchanged)
 ├── 4_QA_BOT/              (unchanged)
-├── 5_INFORMATION_RETRIEVAL/ (unchanged — data/embeddings reused)
+├── notebooks/5_INFORMATION_RETRIEVAL/ (unchanged — data/embeddings reused)
 ├── app/
 │   ├── backend/           (replace: Python FastAPI)
 │   │   ├── main.py
