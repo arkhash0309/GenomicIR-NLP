@@ -1,4 +1,3 @@
-import pickle
 from pathlib import Path
 import pandas as pd
 from .models import Paper
@@ -8,15 +7,17 @@ _META = _REPO_ROOT / "notebooks" / "5_INFORMATION_RETRIEVAL" / "data" / "metadat
 _CSV  = _REPO_ROOT / "notebooks" / "5_INFORMATION_RETRIEVAL" / "data" / "papers_combined_with_abstract_and_summary.csv"
 
 _papers: list[Paper] = []
+_papers_by_id: dict[int, Paper] = {}
 
 
 def _reset_papers():
-    global _papers
+    global _papers, _papers_by_id
     _papers = []
+    _papers_by_id = {}
 
 
 def load_papers() -> list[Paper]:
-    global _papers
+    global _papers, _papers_by_id
     if _papers:
         return _papers
     df = pd.read_pickle(_META).reset_index(drop=True)
@@ -38,14 +39,15 @@ def load_papers() -> list[Paper]:
             summary=summary_map.get(title, ""),
         ))
     _papers = [p for p in papers if p.title and p.abstract]
+    _papers_by_id = {p.id: p for p in _papers}
     return _papers
 
 
 def get_papers() -> list[Paper]:
+    if not _papers:
+        load_papers()
     return _papers
 
 
 def get_paper_by_id(paper_id: int) -> Paper | None:
-    if 0 <= paper_id < len(_papers):
-        return _papers[paper_id]
-    return None
+    return _papers_by_id.get(paper_id)
