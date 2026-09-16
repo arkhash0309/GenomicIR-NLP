@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, type RefObject } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { api, type Stats } from '../lib/api'
 import { useTheme } from '../contexts/ThemeContext'
 import Skeleton from '../components/Skeleton'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { useInView } from '../hooks/useInView'
 
 function AnimatedCount({ target }: { target: number }) {
   const [val, setVal] = useState(0)
@@ -24,6 +25,7 @@ function AnimatedCount({ target }: { target: number }) {
 function DNABackground({ light }: { light: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const canvas = canvasRef.current!
     const ctx = canvas.getContext('2d')!
     let frame = 0
@@ -35,7 +37,7 @@ function DNABackground({ light }: { light: boolean }) {
     resize()
     const ro = new ResizeObserver(resize)
     ro.observe(canvas)
-    const animate = () => {
+    const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       const strokeAlpha = light ? 0.18 : 0.15
       const dot1Alpha  = light ? 0.30 : 0.40
@@ -61,7 +63,10 @@ function DNABackground({ light }: { light: boolean }) {
           ctx.stroke()
         }
       }
-      frame += 0.5
+    }
+    const animate = () => {
+      draw()
+      if (!prefersReduced) frame += 0.5
       animFrameId = requestAnimationFrame(animate)
     }
     animate()
@@ -136,6 +141,8 @@ export default function Home() {
   const { theme } = useTheme()
   const isLight = theme === 'light'
   useDocumentTitle()
+  const { ref: statsRef, inView: statsInView } = useInView()
+  const { ref: featuresRef, inView: featuresInView } = useInView()
 
   useEffect(() => {
     api.stats().then(setStats).catch(() => {}).finally(() => setStatsLoading(false))
@@ -189,10 +196,16 @@ export default function Home() {
       </section>
 
       {/* Stats */}
-      <section className="py-16 px-6" aria-label="Database statistics">
+      <section ref={statsRef as RefObject<HTMLElement>} className="py-16 px-6" aria-label="Database statistics">
         <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {STAT_LABELS.map(({ key, label }) => (
-            <div key={key} className="glass rounded-2xl p-8 text-center">
+          {STAT_LABELS.map(({ key, label }, i) => (
+            <motion.div
+              key={key}
+              initial={{ opacity: 0, y: 20 }}
+              animate={statsInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: i * 0.1, duration: 0.4 }}
+              className="glass rounded-2xl p-8 text-center"
+            >
               {statsLoading ? (
                 <>
                   <div className="flex justify-center mb-2">
@@ -209,13 +222,13 @@ export default function Home() {
                   <div className="text-white/50 text-sm" aria-hidden="true">{label}</div>
                 </>
               )}
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* Features */}
-      <section className="py-16 px-6 border-t border-white/5" aria-labelledby="features-heading">
+      <section ref={featuresRef as RefObject<HTMLElement>} className="py-16 px-6 border-t border-white/5" aria-labelledby="features-heading">
         <div className="max-w-4xl mx-auto">
           <h2 id="features-heading" className="text-2xl font-semibold text-center mb-2">
             Three lenses on the genome
@@ -227,9 +240,9 @@ export default function Home() {
             {features.map((c, i) => (
               <motion.li
                 key={c.to}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + i * 0.08 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={featuresInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: i * 0.12, duration: 0.4 }}
               >
                 <Link
                   to={c.to}

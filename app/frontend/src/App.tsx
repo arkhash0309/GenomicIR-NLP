@@ -8,6 +8,7 @@ import BackToTop from './components/BackToTop'
 import Footer from './components/Footer'
 import PageWrapper from './components/PageWrapper'
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal'
+import ErrorBoundary from './components/ErrorBoundary'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { FontSizeProvider } from './contexts/FontSizeContext'
@@ -55,13 +56,15 @@ function AppShell() {
       <ScrollToTop />
       <main id="main-content" className="min-h-screen pt-16 flex flex-col" tabIndex={-1}>
         <div className="flex-1">
-          <Suspense fallback={
-            <div className="flex flex-col items-center justify-center h-64 gap-3" role="status">
-              <Spinner size="lg" label="Loading page…" />
-            </div>
-          }>
-            <AnimatedRoutes />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={
+              <div className="flex flex-col items-center justify-center h-64 gap-3" role="status">
+                <Spinner size="lg" label="Loading page…" />
+              </div>
+            }>
+              <AnimatedRoutes />
+            </Suspense>
+          </ErrorBoundary>
         </div>
         <Footer />
       </main>

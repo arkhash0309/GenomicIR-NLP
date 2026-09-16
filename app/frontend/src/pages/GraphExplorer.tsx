@@ -78,6 +78,42 @@ export default function GraphExplorer() {
           : ''}
       </div>
 
+      {graph.nodes.length === 0 && !loading && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-2xl p-8 text-center max-w-lg mx-auto mt-8"
+        >
+          <div className="text-4xl mb-4" aria-hidden="true">🕸️</div>
+          <h2 className="text-white/70 font-medium mb-2">Explore the entity network</h2>
+          <p className="text-white/40 text-sm mb-6">
+            Enter biomedical entity names above to see how genes, diseases, and chemicals co-occur across papers.
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {['BRCA1, breast cancer', 'CRISPR, Cas9', 'p53, apoptosis', 'dopamine, Parkinson'].map(ex => (
+              <button
+                key={ex}
+                onClick={async () => {
+                  setQuery(ex)
+                  setLoading(true)
+                  try {
+                    const names = ex.split(',').map(s => s.trim())
+                    const data = await api.subgraph(names)
+                    setGraph(data)
+                    setSelected(null)
+                    if (data.nodes.length === 0) error('No entities found.')
+                  } catch { error('Graph query failed.') }
+                  finally { setLoading(false) }
+                }}
+                className="text-xs glass px-3 py-1.5 rounded-lg text-genomic-cyan/80 hover:text-genomic-cyan transition-colors font-mono"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {graph.nodes.length > 0 && (
         <motion.div
           initial={{ opacity: 0 }}
