@@ -2,11 +2,158 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body { background-color: #0a0f1e; color: white; }
+/* ── CSS custom properties (dark = default) ──────────────────────── */
+:root {
+  --bg:            #0a0f1e;
+  --bg-800:        #0d1426;
+  --surface:       rgba(255,255,255,0.05);
+  --border:        rgba(255,255,255,0.10);
+  --border-mid:    rgba(255,255,255,0.20);
+  --text-100:      #ffffff;
+  --text-90:       rgba(255,255,255,0.90);
+  --text-70:       rgba(255,255,255,0.70);
+  --text-60:       rgba(255,255,255,0.60);
+  --text-50:       rgba(255,255,255,0.50);
+  --text-40:       rgba(255,255,255,0.40);
+  --text-30:       rgba(255,255,255,0.30);
+  --text-20:       rgba(255,255,255,0.20);
+  --shadow:        none;
+  --edge-color:    rgba(255,255,255,0.14);
+  --node-stroke:   rgba(255,255,255,0.30);
 }
 
-@layer utilities {
-  .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
-  .text-gradient { background: linear-gradient(135deg, #06b6d4, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+html.light {
+  --bg:            #f0f6ff;
+  --bg-800:        #e4eefb;
+  --surface:       rgba(255,255,255,0.88);
+  --border:        rgba(15,23,42,0.10);
+  --border-mid:    rgba(15,23,42,0.22);
+  --text-100:      #0f172a;
+  --text-90:       #1e293b;
+  --text-70:       #334155;
+  --text-60:       #475569;
+  --text-50:       #64748b;
+  --text-40:       #94a3b8;
+  --text-30:       #cbd5e1;
+  --text-20:       #e2e8f0;
+  --shadow:        0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
+  --edge-color:    rgba(15,23,42,0.18);
+  --node-stroke:   rgba(15,23,42,0.22);
 }
+
+/* ── Base ─────────────────────────────────────────────────────────── */
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--text-100);
+    transition: background-color 0.25s ease, color 0.15s ease;
+  }
+
+  /* Accessible focus ring for all keyboard-navigable elements */
+  :focus-visible {
+    outline: 2px solid #06b6d4;
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* Respect user's reduced-motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ── Utilities ────────────────────────────────────────────────────── */
+@layer utilities {
+  .glass {
+    background: var(--surface);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    transition: border-color 0.2s ease, background 0.25s ease, box-shadow 0.2s ease;
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #06b6d4, #10b981);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Screen-reader only utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+  .not-sr-only {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
+
+/* ── Light-mode overrides for Tailwind white-opacity utilities ─────── */
+html.light .text-white    { color: var(--text-100) !important; }
+html.light .text-white\/90 { color: var(--text-90) !important; }
+html.light .text-white\/70 { color: var(--text-70) !important; }
+html.light .text-white\/60 { color: var(--text-60) !important; }
+html.light .text-white\/50 { color: var(--text-50) !important; }
+html.light .text-white\/40 { color: var(--text-40) !important; }
+html.light .text-white\/30 { color: var(--text-30) !important; }
+html.light .text-white\/20 { color: var(--text-20) !important; }
+
+html.light .placeholder-white\/30::placeholder { color: var(--text-40) !important; }
+html.light .placeholder-white\/50::placeholder { color: var(--text-50) !important; }
+
+html.light .bg-white\/5   { background-color: rgba(255,255,255,0.88) !important; }
+html.light .bg-white\/10  { background-color: rgba(255,255,255,0.80) !important; }
+html.light .bg-navy       { background-color: var(--bg) !important; }
+
+html.light .border-white\/10 { border-color: var(--border) !important; }
+html.light .border-white\/30 { border-color: var(--border-mid) !important; }
+
+html.light input,
+html.light textarea {
+  color: var(--text-100);
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: var(--text-40);
+}
+
+/* Nav border in light mode */
+html.light nav.glass {
+  border-bottom-color: var(--border) !important;
+}
+
+/* Entity chip light mode tweaks */
+html.light .bg-emerald-500\/20 { background-color: rgba(16,185,129,0.12) !important; }
+html.light .bg-rose-500\/20    { background-color: rgba(244,63,94,0.12) !important; }
+html.light .bg-amber-500\/20   { background-color: rgba(245,158,11,0.12) !important; }
+html.light .text-emerald-300   { color: #059669 !important; }
+html.light .text-rose-300      { color: #e11d48 !important; }
+html.light .text-amber-300     { color: #d97706 !important; }
+html.light .border-emerald-500\/30 { border-color: rgba(16,185,129,0.30) !important; }
+html.light .border-rose-500\/30    { border-color: rgba(244,63,94,0.30) !important; }
+html.light .border-amber-500\/30   { border-color: rgba(245,158,11,0.30) !important; }
+
+/* Score badge in light mode */
+html.light .bg-genomic-cyan\/10 { background-color: rgba(6,182,212,0.12) !important; }

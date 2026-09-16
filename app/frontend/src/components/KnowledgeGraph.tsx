@@ -1,4 +1,3 @@
-// src/components/KnowledgeGraph.tsx
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
 import type { GraphNode, GraphEdge } from '../lib/api'
@@ -19,6 +18,17 @@ interface Props {
 
 type SimNode = GraphNode & d3.SimulationNodeDatum
 type SimEdge = { source: SimNode | string; target: SimNode | string; type: string; weight: number }
+
+function getThemeEdgeColor() {
+  return document.documentElement.classList.contains('light')
+    ? 'rgba(15,23,42,0.18)'
+    : 'rgba(255,255,255,0.14)'
+}
+function getThemeNodeStroke() {
+  return document.documentElement.classList.contains('light')
+    ? 'rgba(15,23,42,0.22)'
+    : 'rgba(255,255,255,0.30)'
+}
 
 export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
@@ -68,9 +78,9 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
       .data(simEdges, d => `${d.source as string}-${d.target as string}`)
       .join(
         enter => enter.append('line').attr('class', 'edge')
-          .attr('stroke', 'rgba(255,255,255,0.12)')
+          .attr('stroke', getThemeEdgeColor())
           .attr('stroke-width', d => Math.sqrt(d.weight || 1)),
-        update => update,
+        update => update.attr('stroke', getThemeEdgeColor()),
         exit => exit.remove()
       )
 
@@ -84,14 +94,24 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
       .join(
         enter => {
           const eg = enter.append('g').attr('class', 'node').style('cursor', 'pointer')
+            .attr('role', 'button')
+            .attr('tabindex', '0')
+            .attr('aria-label', d => `${d.type}: ${d.label}`)
             .call(drag)
             .on('click', (_, d) => onNodeClick?.(d))
+            .on('keydown', (ev, d) => {
+              if (ev.key === 'Enter' || ev.key === ' ') {
+                ev.preventDefault()
+                onNodeClick?.(d)
+              }
+            })
           eg.append('circle')
             .attr('r', 0)
             .attr('fill', d => NODE_COLOR[d.type] ?? '#6b7280')
-            .attr('stroke', 'rgba(255,255,255,0.3)').attr('stroke-width', 1.5)
+            .attr('stroke', getThemeNodeStroke())
+            .attr('stroke-width', 1.5)
             .transition().duration(400).attr('r', d => NODE_RADIUS[d.type] ?? 7)
-          eg.append('title').text(d => d.label)
+          eg.append('title').text(d => `${d.type}: ${d.label}`)
           return eg
         },
         update => update,
@@ -112,7 +132,12 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
   }, [nodes, edges, onNodeClick])
 
   return (
-    <svg ref={svgRef} className={className ?? 'w-full h-full'}
-      style={{ background: 'transparent' }} />
+    <svg
+      ref={svgRef}
+      className={className ?? 'w-full h-full'}
+      style={{ background: 'transparent' }}
+      role="img"
+      aria-label={`Knowledge graph with ${nodes.length} nodes and ${edges.length} connections`}
+    />
   )
 }

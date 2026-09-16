@@ -1,13 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="GenomicIR — Agentic AI research assistant over 7,000+ bioRxiv genomics papers with hybrid retrieval and live knowledge graphs." />
     <title>GenomicIR — Agentic Research</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <!-- Prevent flash of unstyled theme: apply saved preference before first paint -->
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('genomic-theme');
+          if (!t) {
+            t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          var html = document.documentElement;
+          html.classList.remove('dark', 'light');
+          html.classList.add(t);
+        } catch(e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-navy text-white font-sans">
+  <body class="font-sans">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
