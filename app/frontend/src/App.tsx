@@ -3,6 +3,7 @@ import { Suspense, lazy } from 'react'
 import Nav from './components/Nav'
 import SkipLink from './components/SkipLink'
 import Spinner from './components/Spinner'
+import BackToTop from './components/BackToTop'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { FontSizeProvider } from './contexts/FontSizeContext'
@@ -22,6 +23,7 @@ export default function App() {
           <BrowserRouter>
             <SkipLink />
             <Nav />
+            <BackToTop />
             <main id="main-content" className="min-h-screen pt-16" tabIndex={-1}>
               <Suspense fallback={
                 <div className="flex flex-col items-center justify-center h-64 gap-3" role="status">

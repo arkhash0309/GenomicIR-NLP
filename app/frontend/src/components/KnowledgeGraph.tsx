@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import * as d3 from 'd3'
 import type { GraphNode, GraphEdge } from '../lib/api'
 
@@ -31,20 +31,41 @@ function getThemeNodeStroke() {
 }
 
 export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }: Props) {
-  const svgRef = useRef<SVGSVGElement>(null)
-  const simRef = useRef<d3.Simulation<SimNode, SimEdge> | null>(null)
-  const gRef = useRef<SVGGElement | null>(null)
+  const svgRef  = useRef<SVGSVGElement>(null)
+  const simRef  = useRef<d3.Simulation<SimNode, SimEdge> | null>(null)
+  const gRef    = useRef<SVGGElement | null>(null)
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
+  const [scale, setScale] = useState(1)
+
+  const applyZoom = useCallback((factor: number) => {
+    if (!svgRef.current || !zoomRef.current) return
+    const svg = d3.select(svgRef.current)
+    svg.transition().duration(250).call(
+      zoomRef.current.scaleBy as any, factor
+    )
+  }, [])
+
+  const resetZoom = useCallback(() => {
+    if (!svgRef.current || !zoomRef.current) return
+    const svg = d3.select(svgRef.current)
+    svg.transition().duration(300).call(
+      zoomRef.current.transform as any, d3.zoomIdentity
+    )
+  }, [])
 
   useEffect(() => {
     const svg = d3.select(svgRef.current!)
     svg.selectAll('*').remove()
     const g = svg.append('g')
     gRef.current = g.node()
-    svg.call(
-      d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.1, 6])
-        .on('zoom', ev => g.attr('transform', ev.transform))
-    )
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 6])
+      .on('zoom', ev => {
+        g.attr('transform', ev.transform)
+        setScale(ev.transform.k)
+      })
+    zoomRef.current = zoom
+    svg.call(zoom)
     return () => { simRef.current?.stop() }
   }, [])
 
@@ -132,12 +153,42 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
   }, [nodes, edges, onNodeClick])
 
   return (
-    <svg
-      ref={svgRef}
-      className={className ?? 'w-full h-full'}
-      style={{ background: 'transparent' }}
-      role="img"
-      aria-label={`Knowledge graph with ${nodes.length} nodes and ${edges.length} connections`}
-    />
+    <div className={`relative ${className ?? 'w-full h-full'}`}>
+      <svg
+        ref={svgRef}
+        className="w-full h-full"
+        style={{ background: 'transparent' }}
+        role="img"
+        aria-label={`Knowledge graph with ${nodes.length} nodes and ${edges.length} connections. Use scroll to zoom, drag to pan.`}
+      />
+
+      {/* Zoom controls for keyboard/pointer users */}
+      {nodes.length > 0 && (
+        <div
+          className="absolute bottom-3 left-3 flex items-center gap-1"
+          role="group"
+          aria-label="Graph zoom controls"
+        >
+          <button
+            onClick={() => applyZoom(1.4)}
+            aria-label="Zoom in"
+            className="w-7 h-7 glass rounded flex items-center justify-center text-white/50 hover:text-white transition-colors text-sm font-bold"
+          >+</button>
+          <button
+            onClick={resetZoom}
+            aria-label="Reset zoom"
+            title="Reset zoom"
+            className="px-2 h-7 glass rounded flex items-center justify-center text-white/30 hover:text-white/60 transition-colors font-mono text-xs"
+          >
+            {Math.round(scale * 100)}%
+          </button>
+          <button
+            onClick={() => applyZoom(1 / 1.4)}
+            aria-label="Zoom out"
+            className="w-7 h-7 glass rounded flex items-center justify-center text-white/50 hover:text-white transition-colors text-sm font-bold"
+          >−</button>
+        </div>
+      )}
+    </div>
   )
 }

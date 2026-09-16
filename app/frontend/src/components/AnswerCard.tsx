@@ -1,9 +1,15 @@
 import { motion } from 'framer-motion'
+import CopyButton from './CopyButton'
 
 interface Props { answer: string; citations: string[] }
 
 export default function AnswerCard({ answer, citations }: Props) {
   if (!answer) return null
+
+  const fullText = citations.length > 0
+    ? `${answer}\n\nCitations:\n${citations.map(doi => `https://doi.org/${doi}`).join('\n')}`
+    : answer
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -13,7 +19,14 @@ export default function AnswerCard({ answer, citations }: Props) {
       aria-live="polite"
       aria-atomic="false"
     >
-      <h2 className="text-genomic-cyan font-semibold text-sm mb-3" id="answer-heading">Answer</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-genomic-cyan font-semibold text-sm" id="answer-heading">Answer</h2>
+        <CopyButton
+          text={fullText}
+          label="Copy answer"
+          className="text-white/30 hover:text-white/60 px-2 py-1 glass rounded-lg text-xs"
+        />
+      </div>
       <p className="text-white/90 leading-relaxed whitespace-pre-wrap" aria-labelledby="answer-heading">
         {answer}
       </p>
@@ -29,7 +42,7 @@ export default function AnswerCard({ answer, citations }: Props) {
                   href={`https://doi.org/${doi}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs text-genomic-cyan/80 hover:text-genomic-cyan bg-genomic-cyan/10 px-2 py-1 rounded font-mono"
+                  className="text-xs text-genomic-cyan/80 hover:text-genomic-cyan bg-genomic-cyan/10 px-2 py-1 rounded font-mono transition-colors"
                   aria-label={`View citation DOI ${doi} (opens in new tab)`}
                 >
                   {doi}
