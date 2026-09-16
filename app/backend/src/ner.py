@@ -20,10 +20,12 @@ def load_ner() -> None:
 
 
 def load_entity_cache() -> None:
-    global _entity_cache
+    global _entity_cache, _cache_loaded
     if CACHE_PATH.exists():
         with open(CACHE_PATH) as f:
             _entity_cache = {int(k): v for k, v in json.load(f).items()}
+        if _entity_cache:
+            _cache_loaded = True
 
 
 def save_entity_cache() -> None:
