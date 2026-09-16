@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { api, type PaperDetail as PaperDetailType } from '../lib/api'
 import EntityChip from '../components/EntityChip'
 import Spinner from '../components/Spinner'
+import CopyButton from '../components/CopyButton'
 
 export default function PaperDetail() {
   const { id } = useParams<{ id: string }>()
@@ -60,15 +61,18 @@ export default function PaperDetail() {
 
         <div className="flex flex-wrap gap-3 mb-8" role="group" aria-label="Paper links">
           {paper.doi && (
-            <a
-              href={`https://doi.org/${paper.doi}`}
-              target="_blank"
-              rel="noreferrer"
-              className="px-4 py-2 bg-genomic-cyan/20 text-genomic-cyan rounded-lg text-sm hover:bg-genomic-cyan/30 transition-colors"
-              aria-label={`View DOI ${paper.doi} (opens in new tab)`}
-            >
-              DOI: {paper.doi}
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href={`https://doi.org/${paper.doi}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 bg-genomic-cyan/20 text-genomic-cyan rounded-lg text-sm hover:bg-genomic-cyan/30 transition-colors"
+                aria-label={`View DOI ${paper.doi} (opens in new tab)`}
+              >
+                DOI: {paper.doi}
+              </a>
+              <CopyButton text={`https://doi.org/${paper.doi}`} label="Copy DOI link" className="text-white/30 hover:text-white/60 px-2 py-1" />
+            </div>
           )}
           {paper.url && (
             <a

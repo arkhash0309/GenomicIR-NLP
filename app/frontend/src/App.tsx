@@ -7,11 +7,12 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { FontSizeProvider } from './contexts/FontSizeContext'
 
-const Home        = lazy(() => import('./pages/Home'))
-const Ask         = lazy(() => import('./pages/Ask'))
-const Search      = lazy(() => import('./pages/Search'))
+const Home          = lazy(() => import('./pages/Home'))
+const Ask           = lazy(() => import('./pages/Ask'))
+const Search        = lazy(() => import('./pages/Search'))
 const GraphExplorer = lazy(() => import('./pages/GraphExplorer'))
-const PaperDetail = lazy(() => import('./pages/PaperDetail'))
+const PaperDetail   = lazy(() => import('./pages/PaperDetail'))
+const NotFound      = lazy(() => import('./pages/NotFound'))
 
 export default function App() {
   return (
@@ -28,11 +29,12 @@ export default function App() {
                 </div>
               }>
                 <Routes>
-                  <Route path="/"        element={<Home />} />
-                  <Route path="/ask"     element={<Ask />} />
-                  <Route path="/search"  element={<Search />} />
-                  <Route path="/explore" element={<GraphExplorer />} />
+                  <Route path="/"          element={<Home />} />
+                  <Route path="/ask"       element={<Ask />} />
+                  <Route path="/search"    element={<Search />} />
+                  <Route path="/explore"   element={<GraphExplorer />} />
                   <Route path="/paper/:id" element={<PaperDetail />} />
+                  <Route path="*"          element={<NotFound />} />
                 </Routes>
               </Suspense>
             </main>
