@@ -1,5 +1,5 @@
 import { useState, useCallback, useId, useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useSearchParams } from 'react-router-dom'
 import { useSSE, type SSEEvent } from '../hooks/useSSE'
 import { useGraph } from '../hooks/useGraph'
@@ -46,6 +46,7 @@ export default function Ask() {
   const inputRef = useRef<HTMLInputElement>(null)
   const traceSeq = useRef(0)
 
+  const reduced = useReducedMotion()
   useDocumentTitle('Research Assistant')
   useKeyboardShortcut({ '/': () => { inputRef.current?.focus(); inputRef.current?.select() } })
 
@@ -126,11 +127,12 @@ export default function Ask() {
           autoComplete="off"
           className="flex-1 glass rounded-xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:border-genomic-cyan/60 border border-white/10 transition-colors disabled:opacity-60"
         />
-        <button
+        <motion.button
           onClick={handleAsk}
           disabled={active || !question.trim()}
           aria-label={active ? 'Processing query…' : 'Submit question'}
           aria-busy={active}
+          whileTap={reduced ? undefined : { scale: 0.97 }}
           className="px-6 bg-genomic-cyan text-navy-DEFAULT font-semibold rounded-xl hover:bg-genomic-cyan/90 disabled:opacity-50 transition-colors"
         >
           {active ? (
@@ -139,7 +141,7 @@ export default function Ask() {
               <span aria-hidden="true" className="animate-pulse">Thinking…</span>
             </>
           ) : 'Ask'}
-        </button>
+        </motion.button>
       </div>
       <div className="flex items-center gap-4 mb-4">
         <p id="ask-hint" className="sr-only">Press Enter or click Ask to submit your genomics research question</p>

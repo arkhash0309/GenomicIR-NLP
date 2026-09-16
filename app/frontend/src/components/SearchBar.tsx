@@ -1,4 +1,5 @@
 import { FormEvent, useId, useState } from 'react'
+import Spinner from './Spinner'
 
 interface Props { onSearch: (q: string) => void; placeholder?: string; loading?: boolean }
 
@@ -18,20 +19,19 @@ export default function SearchBar({ onSearch, placeholder = 'Search genomics pap
         autoComplete="off"
         spellCheck="false"
         aria-label="Search genomics papers"
-        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-genomic-cyan/60 transition-colors"
+        disabled={loading}
+        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-genomic-cyan/60 transition-colors disabled:opacity-60"
       />
       <button
         type="submit"
         disabled={loading || !q.trim()}
         aria-label={loading ? 'Searching…' : 'Search'}
-        className="px-5 py-3 bg-genomic-cyan text-navy-DEFAULT font-semibold rounded-xl hover:bg-genomic-cyan/90 disabled:opacity-50 transition-colors"
+        aria-busy={loading}
+        className="px-5 py-3 bg-genomic-cyan text-navy-DEFAULT font-semibold rounded-xl hover:bg-genomic-cyan/90 disabled:opacity-50 transition-colors flex items-center gap-2 min-w-[80px] justify-center"
       >
-        {loading ? (
-          <>
-            <span className="sr-only">Searching…</span>
-            <span aria-hidden="true">…</span>
-          </>
-        ) : 'Search'}
+        {loading
+          ? <Spinner size="sm" label="Searching…" />
+          : 'Search'}
       </button>
     </form>
   )

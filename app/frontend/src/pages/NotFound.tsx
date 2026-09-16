@@ -1,13 +1,11 @@
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export default function NotFound() {
+  useDocumentTitle('Page not found')
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
       className="max-w-lg mx-auto px-6 py-24 text-center"
-      role="main"
       aria-labelledby="not-found-heading"
     >
       <div className="text-8xl font-bold text-gradient mb-6 select-none" aria-hidden="true">404</div>
@@ -23,6 +21,6 @@ export default function NotFound() {
           Search papers
         </Link>
       </div>
-    </motion.div>
+    </div>
   )
 }

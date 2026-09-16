@@ -3,8 +3,18 @@ interface Props {
   className?: string
 }
 
-function parseInline(text: string): string {
+function escapeHtml(text: string): string {
   return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+function parseInline(text: string): string {
+  const safe = escapeHtml(text)
+  return safe
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/`(.+?)`/g, '<code class="bg-white/10 px-1 py-0.5 rounded text-genomic-cyan font-mono text-sm">$1</code>')

@@ -250,7 +250,7 @@ export default function Home() {
               >
                 <Link
                   to={c.to}
-                  className={`block glass rounded-2xl p-6 transition-all duration-200 group h-full ${c.border}`}
+                  className={`block glass-card rounded-2xl p-6 group h-full ${c.border}`}
                   aria-label={`${c.title}: ${c.desc}`}
                 >
                   <div className={`mb-4 ${c.iconColor} opacity-80 group-hover:opacity-100 transition-opacity`}>
