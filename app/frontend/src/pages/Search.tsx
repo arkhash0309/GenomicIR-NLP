@@ -1,17 +1,28 @@
-import { useState, useRef } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import SearchBar from '../components/SearchBar'
 import PaperCard from '../components/PaperCard'
 import Spinner from '../components/Spinner'
+import KeyboardHint from '../components/KeyboardHint'
 import { api, type SearchResult } from '../lib/api'
 import { useToast } from '../contexts/ToastContext'
+import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
 
 export default function Search() {
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState('')
   const resultsRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const { error } = useToast()
+
+  const focusSearch = useCallback(() => {
+    const input = document.querySelector<HTMLInputElement>('[role="search"] input')
+    input?.focus()
+    input?.select()
+  }, [])
+
+  useKeyboardShortcut({ '/': focusSearch })
 
   const handleSearch = async (q: string) => {
     setQuery(q)
@@ -34,15 +45,19 @@ export default function Search() {
         <p className="text-white/50">FAISS semantic + BM25 lexical + cross-encoder reranking</p>
       </header>
 
-      <SearchBar onSearch={handleSearch} loading={loading} />
+      <div className="space-y-2">
+        <SearchBar onSearch={handleSearch} loading={loading} />
+        <div className="flex justify-end">
+          <KeyboardHint keys={['/']} label="to focus search" />
+        </div>
+      </div>
 
       {loading && (
-        <div className="flex justify-center py-16" role="status" aria-label="Searching…">
+        <div className="flex justify-center py-16" role="status">
           <Spinner size="lg" label="Searching papers…" />
         </div>
       )}
 
-      {/* Screen-reader live region for result counts */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {loading
           ? 'Searching…'
@@ -72,14 +87,16 @@ export default function Search() {
         )}
 
         {!loading && query && results.length === 0 && (
-          <motion.p
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mt-12 text-center text-white/30 text-sm"
+            className="mt-16 text-center"
             role="status"
           >
-            No results found for &ldquo;{query}&rdquo;
-          </motion.p>
+            <div className="text-4xl mb-4" aria-hidden="true">🔬</div>
+            <p className="text-white/40 text-sm">No results found for &ldquo;{query}&rdquo;</p>
+            <p className="text-white/20 text-xs mt-2">Try different keywords or check spelling</p>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

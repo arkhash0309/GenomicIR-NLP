@@ -62,7 +62,7 @@ const FONT_SIZES:  Record<FontSize, string> = { normal: 'text-xs', large: 'text-
 
 export default function Nav() {
   const { pathname } = useLocation()
-  const { theme, toggle } = useTheme()
+  const { theme, toggle, highContrast, toggleHighContrast } = useTheme()
   const { fontSize, setFontSize } = useFontSize()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -120,6 +120,19 @@ export default function Nav() {
               </button>
             ))}
           </div>
+
+          {/* High contrast toggle */}
+          <button
+            onClick={toggleHighContrast}
+            aria-label={highContrast ? 'Disable high contrast' : 'Enable high contrast'}
+            aria-pressed={highContrast}
+            title={highContrast ? 'Disable high contrast' : 'Enable high contrast'}
+            className={`hidden sm:flex w-9 h-9 items-center justify-center rounded-lg glass hover:border-white/30 transition-colors font-bold text-xs ${
+              highContrast ? 'text-genomic-cyan border-genomic-cyan/40' : 'text-white/40 hover:text-white'
+            }`}
+          >
+            HC
+          </button>
 
           {/* Theme toggle */}
           <button
@@ -185,6 +198,21 @@ export default function Nav() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* High contrast in mobile */}
+          <div className="mt-3 px-3">
+            <button
+              onClick={toggleHighContrast}
+              aria-pressed={highContrast}
+              className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
+                highContrast
+                  ? 'bg-genomic-cyan/20 text-genomic-cyan border border-genomic-cyan/30'
+                  : 'glass text-white/40 hover:text-white/70'
+              }`}
+            >
+              High contrast {highContrast ? 'ON' : 'OFF'}
+            </button>
           </div>
         </div>
       )}

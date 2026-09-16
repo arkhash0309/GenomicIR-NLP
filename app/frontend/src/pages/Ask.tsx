@@ -5,8 +5,10 @@ import { useGraph } from '../hooks/useGraph'
 import KnowledgeGraph from '../components/KnowledgeGraph'
 import ReasoningTrace, { type TraceEntry } from '../components/ReasoningTrace'
 import AnswerCard from '../components/AnswerCard'
+import KeyboardHint from '../components/KeyboardHint'
 import type { GraphNode } from '../lib/api'
 import { useToast } from '../contexts/ToastContext'
+import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
 
 const EXAMPLE_QUESTIONS = [
   'What is the role of BRCA1 in hereditary breast cancer?',
@@ -33,7 +35,10 @@ export default function Ask() {
   const { error: toastError } = useToast()
   const uid = useId()
   const inputId = useId()
+  const inputRef = useRef<HTMLInputElement>(null)
   const traceSeq = useRef(0)
+
+  useKeyboardShortcut({ '/': () => { inputRef.current?.focus(); inputRef.current?.select() } })
 
   const handleEvent = useCallback((e: SSEEvent) => {
     if (e.type === 'reasoning') {
@@ -101,6 +106,7 @@ export default function Ask() {
         <label htmlFor={inputId} className="sr-only">Genomics research question</label>
         <input
           id={inputId}
+          ref={inputRef}
           value={question}
           onChange={e => setQuestion(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAsk()}
@@ -126,7 +132,13 @@ export default function Ask() {
           ) : 'Ask'}
         </button>
       </div>
-      <p id="ask-hint" className="sr-only">Press Enter or click Ask to submit your genomics research question</p>
+      <div className="flex items-center gap-4 mb-4">
+        <p id="ask-hint" className="sr-only">Press Enter or click Ask to submit your genomics research question</p>
+        <div className="flex gap-3">
+          <KeyboardHint keys={['/']} label="to focus" />
+          <KeyboardHint keys={['↵']} label="to ask" />
+        </div>
+      </div>
 
       {/* Example questions */}
       {!active && trace.length === 0 && (

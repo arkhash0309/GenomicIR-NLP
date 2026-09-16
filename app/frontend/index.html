@@ -7,17 +7,18 @@
     <title>GenomicIR — Agentic Research</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <!-- Prevent flash of unstyled theme: apply saved preference before first paint -->
+    <!-- Prevent flash of unstyled theme: apply saved preferences before first paint -->
     <script>
       (function() {
         try {
-          var t = localStorage.getItem('genomic-theme');
-          if (!t) {
-            t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-          }
           var html = document.documentElement;
+          var t = localStorage.getItem('genomic-theme');
+          if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
           html.classList.remove('dark', 'light');
           html.classList.add(t);
+          var hc = localStorage.getItem('genomic-hc') === '1'
+            || window.matchMedia('(prefers-contrast: more)').matches;
+          if (hc) html.classList.add('hc');
         } catch(e) {}
       })();
     </script>

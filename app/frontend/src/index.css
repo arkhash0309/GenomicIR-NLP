@@ -128,6 +128,30 @@ html.light *::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.4); }
 /* ── Selection color ──────────────────────────────────────────────── */
 ::selection { background: rgba(6,182,212,0.25); color: inherit; }
 
+/* ── High contrast mode ───────────────────────────────────────────── */
+html.hc {
+  --border:     rgba(255,255,255,0.40);
+  --border-mid: rgba(255,255,255,0.60);
+}
+html.hc.light {
+  --border:     rgba(15,23,42,0.40);
+  --border-mid: rgba(15,23,42,0.60);
+}
+html.hc .glass {
+  border-width: 2px !important;
+}
+html.hc .text-white\/50,
+html.hc .text-white\/40,
+html.hc .text-white\/30 {
+  color: rgba(255,255,255,0.80) !important;
+}
+html.hc.light .text-white\/50,
+html.hc.light .text-white\/40,
+html.hc.light .text-white\/30 {
+  color: rgba(15,23,42,0.80) !important;
+}
+html.hc .text-genomic-cyan\/80 { color: #06b6d4 !important; }
+
 /* ── Light-mode overrides for Tailwind white-opacity utilities ─────── */
 html.light .text-white    { color: var(--text-100) !important; }
 html.light .text-white\/90 { color: var(--text-90) !important; }
