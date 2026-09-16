@@ -1,111 +1,49 @@
-# GenomicIR-NLP · Web App
+# GenomicIR-NLP
 
-A two-service web application that puts the GenomicIR-NLP pipeline behind a polished UI:
+A portfolio-grade agentic RAG application over 7,070 bioRxiv genomics papers.
 
-- **Frontend** — Python · Flask + Jinja templates, with a custom genomics theme (animated DNA helix background, gradient accents, glassmorphic panels).
-- **Backend** — TypeScript · Fastify, exposing three services:
-  - **Retrieve** — BM25 ranking over scraped bioRxiv abstracts.
-  - **Summarize** — extractive sentence-scoring summarizer.
-  - **Ask** — retrieval-augmented extractive question answering.
+## What it does
 
-The backend loads the corpus from `app/backend/data/papers.csv` (copied from `5_INFORMATION_RETRIEVAL/data/`).
-The original Python scripts in the repo were *not* modified.
+- **Research Assistant** (`/ask`): Claude agent with tool use — hybrid search, entity extraction, knowledge graph traversal. Streams reasoning trace and builds a live D3 force-directed graph as it thinks.
+- **Hybrid Search** (`/search`): FAISS semantic + BM25 lexical + RRF fusion + cross-encoder reranking.
+- **Graph Explorer** (`/explore`): Browse entity co-occurrence network — genes, diseases, chemicals and their paper connections.
+- **Paper Detail** (`/paper/:id`): Full paper with extracted biomedical entities.
 
----
+## Stack
 
-## Folder layout
+| Layer | Tech |
+|---|---|
+| Frontend | React 18 + Vite + TailwindCSS + D3.js + Framer Motion |
+| Backend | Python 3.11 + FastAPI + Uvicorn |
+| LLM | Anthropic Claude claude-sonnet-4-6 (tool use + SSE streaming) |
+| Retrieval | FAISS + rank-bm25 + RRF + cross-encoder/ms-marco-MiniLM-L-6-v2 |
+| NER | scispaCy en_ner_bc5cdr_md + en_ner_jnlpba_md |
+| Knowledge graph | NetworkX (in-memory, built at startup) |
 
-```
-app/
-├── backend/                 # Fastify · TypeScript
-│   ├── data/papers.csv      # corpus (copied in from 5_INFORMATION_RETRIEVAL)
-│   ├── src/
-│   │   ├── server.ts
-│   │   └── services/
-│   │       ├── dataStore.ts
-│   │       ├── retrieval.ts     (BM25)
-│   │       ├── summarizer.ts    (extractive)
-│   │       ├── qa.ts            (retrieval-augmented extractive)
-│   │       └── textUtils.ts
-│   ├── package.json
-│   └── tsconfig.json
-└── frontend/                # Flask · Python
-    ├── app.py
-    ├── requirements.txt
-    ├── templates/   (base, index, retrieve, summarize, qa, about)
-    └── static/
-        ├── css/style.css
-        └── js/  (helix.js, main.js, retrieve.js, summarize.js, qa.js)
-```
+## Running locally
 
----
+### Prerequisites
+- Python 3.11+, Node 18+
+- Anthropic API key
 
-## Running it
-
-You'll need **Node 18+** and **Python 3.10+**.
-
-### 1) Backend (Fastify, TypeScript)
+### Backend
 
 ```bash
 cd app/backend
-npm install
-npm run dev       # http://localhost:3001
+pip install -r requirements.txt
+cp .env.example .env          # add your ANTHROPIC_API_KEY
+python main.py                # http://localhost:8000 — startup takes ~60s
 ```
 
-Or build & run:
-
-```bash
-npm run build
-npm start
-```
-
-Health check:
-
-```bash
-curl http://localhost:3001/api/health
-```
-
-### 2) Frontend (Flask)
-
-In a separate terminal:
+### Frontend
 
 ```bash
 cd app/frontend
-python -m venv .venv
-.\.venv\Scripts\activate          # PowerShell on Windows
-# source .venv/bin/activate       # macOS / Linux
-pip install -r requirements.txt
-python app.py                     # http://localhost:5000
+npm install
+npm run dev                   # http://localhost:5173
 ```
 
-By default the frontend talks to `http://localhost:3001`.
-Override with the `BACKEND_URL` env var:
+## Data
 
-```powershell
-$env:BACKEND_URL = "http://localhost:3001"; python app.py
-```
-
----
-
-## API reference
-
-| Method | Path                | Body / Query                              | Returns |
-|--------|---------------------|-------------------------------------------|---------|
-| GET    | `/api/health`       | —                                         | `{ status, papers }` |
-| GET    | `/api/stats`        | —                                         | corpus stats |
-| GET    | `/api/retrieve`     | `?q=<query>&k=<int>`                      | `{ query, results[] }` |
-| POST   | `/api/summarize`    | `{ text?, paperId?, sentences? }`         | `{ summary, paper?, existingSummary? }` |
-| POST   | `/api/qa`           | `{ question }`                            | `{ answer, sources[] }` |
-| GET    | `/api/paper/:id`    | —                                         | single paper record |
-
----
-
-## Notes on logic
-
-These implementations are deliberately lightweight (no heavyweight ML downloads required, fully local):
-
-- **Retrieval** — pure BM25 (`k1=1.5`, `b=0.75`) over tokenized title + abstract.
-- **Summarization** — score each sentence by mean term-frequency of its non-stopword tokens; return top-N in original order.
-- **QA** — retrieve top-K papers, then extract abstract sentences with the highest token overlap with the question and concatenate them as the answer; surface the corresponding papers as citations.
-
-These can be swapped out for the heavier models referenced in the parent project (T5, LLaMA-2, all-MiniLM-L6-v2 + FAISS) by replacing the relevant service module.
+All source data is in `notebooks/5_INFORMATION_RETRIEVAL/data/`. The backend reads it directly — no copy needed.
+The entity cache (`app/backend/data/entity_cache.json`) is generated on first startup (~5 min) and reused on subsequent starts.
