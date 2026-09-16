@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: app/backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./notebooks:/repo/notebooks:ro
+      - ./app/backend/data:/repo/app/backend/data
+      - hf_cache:/root/.cache/huggingface
+    env_file:
+      - path: app/backend/.env
+        required: false
+    environment:
+      - PORT=8000
+
+  frontend:
+    build:
+      context: .
+      dockerfile: app/frontend/Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_TARGET=http://backend:8000
+    depends_on:
+      - backend
+
+volumes:
+  hf_cache:
