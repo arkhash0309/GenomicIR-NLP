@@ -11,7 +11,7 @@ export default {
         surface: { DEFAULT: 'var(--surface)', border: 'var(--border)' },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter Variable', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
     }
