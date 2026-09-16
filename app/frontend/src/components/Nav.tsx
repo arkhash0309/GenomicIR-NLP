@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '../contexts/ThemeContext'
 import { useFontSize, type FontSize } from '../contexts/FontSizeContext'
 
@@ -60,13 +61,50 @@ function CloseIcon() {
 const FONT_LABELS: Record<FontSize, string> = { normal: 'A', large: 'A', xlarge: 'A' }
 const FONT_SIZES:  Record<FontSize, string> = { normal: 'text-xs', large: 'text-sm', xlarge: 'text-base' }
 
-export default function Nav() {
+interface Props {
+  onOpenShortcuts?: () => void
+}
+
+export default function Nav({ onOpenShortcuts }: Props) {
   const { pathname } = useLocation()
   const { theme, toggle, highContrast, toggleHighContrast } = useTheme()
   const { fontSize, setFontSize } = useFontSize()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const hamburgerRef = useRef<HTMLButtonElement>(null)
 
   const closeMenu = () => setMobileOpen(false)
+
+  // Close mobile menu on route change
+  useEffect(() => { closeMenu() }, [pathname])
+
+  // Focus trap for mobile menu
+  useEffect(() => {
+    if (!mobileOpen) return
+    const menu = menuRef.current
+    if (!menu) return
+    const focusables = menu.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+    const first = focusables[0]
+    const last = focusables[focusables.length - 1]
+    first?.focus()
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last?.focus() }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first?.focus() }
+      }
+    }
+    const escape = (e: KeyboardEvent) => { if (e.key === 'Escape') { closeMenu(); hamburgerRef.current?.focus() } }
+    document.addEventListener('keydown', trap)
+    document.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('keydown', trap)
+      document.removeEventListener('keydown', escape)
+    }
+  }, [mobileOpen])
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10"
@@ -75,8 +113,7 @@ export default function Nav() {
 
         {/* Logo */}
         <Link to="/" className="text-lg font-semibold text-gradient shrink-0"
-              aria-label="GenomicIR — go to home page"
-              onClick={closeMenu}>
+              aria-label="GenomicIR — go to home page">
           GenomicIR
         </Link>
 
@@ -144,8 +181,21 @@ export default function Nav() {
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
 
+          {/* Keyboard shortcuts button (desktop only) */}
+          {onOpenShortcuts && (
+            <button
+              onClick={onOpenShortcuts}
+              aria-label="Open keyboard shortcuts (press ?)"
+              title="Keyboard shortcuts"
+              className="hidden sm:flex w-9 h-9 items-center justify-center rounded-lg glass hover:border-white/30 transition-colors text-white/40 hover:text-white font-mono text-xs"
+            >
+              ?
+            </button>
+          )}
+
           {/* Mobile hamburger */}
           <button
+            ref={hamburgerRef}
             className="sm:hidden w-9 h-9 flex items-center justify-center rounded-lg glass hover:border-white/30 transition-colors text-white/60 hover:text-white"
             onClick={() => setMobileOpen(o => !o)}
             aria-expanded={mobileOpen}
@@ -157,65 +207,88 @@ export default function Nav() {
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div id="mobile-menu" className="sm:hidden glass border-t border-white/10 px-4 py-4">
-          <ul className="list-none m-0 p-0 flex flex-col gap-1" role="list">
-            {NAV_LINKS.map(l => (
-              <li key={l.to}>
-                <Link
-                  to={l.to}
-                  onClick={closeMenu}
-                  aria-current={pathname === l.to ? 'page' : undefined}
-                  className={`block text-sm px-3 py-2.5 rounded-lg transition-colors ${
-                    pathname === l.to
-                      ? 'text-genomic-cyan font-medium bg-genomic-cyan/10'
-                      : 'text-white/60 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {/* Font size in mobile */}
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <p className="text-white/30 text-xs mb-2 px-3">Text size</p>
-            <div className="flex gap-2 px-3">
-              {(['normal', 'large', 'xlarge'] as FontSize[]).map((s) => (
+      {/* Mobile menu — animated */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            id="mobile-menu"
+            ref={menuRef}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.22, ease: 'easeInOut' }}
+            className="sm:hidden overflow-hidden border-t border-white/10"
+            style={{ background: 'var(--surface)' }}
+          >
+            <div className="px-4 py-4 backdrop-blur-lg">
+              <ul className="list-none m-0 p-0 flex flex-col gap-1" role="list">
+                {NAV_LINKS.map(l => (
+                  <li key={l.to}>
+                    <Link
+                      to={l.to}
+                      onClick={closeMenu}
+                      aria-current={pathname === l.to ? 'page' : undefined}
+                      className={`block text-sm px-3 py-2.5 rounded-lg transition-colors ${
+                        pathname === l.to
+                          ? 'text-genomic-cyan font-medium bg-genomic-cyan/10'
+                          : 'text-white/60 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Font size in mobile */}
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <p className="text-white/30 text-xs mb-2 px-1">Text size</p>
+                <div className="flex gap-2">
+                  {(['normal', 'large', 'xlarge'] as FontSize[]).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setFontSize(s)}
+                      aria-label={`Text size: ${s}`}
+                      aria-pressed={fontSize === s}
+                      className={`flex-1 py-2 rounded-lg text-center font-semibold transition-colors ${FONT_SIZES[s]} ${
+                        fontSize === s
+                          ? 'bg-genomic-cyan/20 text-genomic-cyan border border-genomic-cyan/30'
+                          : 'glass text-white/40 hover:text-white/70'
+                      }`}
+                    >
+                      {s === 'normal' ? 'Normal' : s === 'large' ? 'Large' : 'X-Large'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* High contrast + shortcuts in mobile */}
+              <div className="mt-3 flex gap-2">
                 <button
-                  key={s}
-                  onClick={() => setFontSize(s)}
-                  aria-label={`Text size: ${s}`}
-                  aria-pressed={fontSize === s}
-                  className={`flex-1 py-2 rounded-lg text-center font-semibold transition-colors ${FONT_SIZES[s]} ${
-                    fontSize === s
+                  onClick={toggleHighContrast}
+                  aria-pressed={highContrast}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    highContrast
                       ? 'bg-genomic-cyan/20 text-genomic-cyan border border-genomic-cyan/30'
                       : 'glass text-white/40 hover:text-white/70'
                   }`}
                 >
-                  {s === 'normal' ? 'Normal' : s === 'large' ? 'Large' : 'X-Large'}
+                  High contrast {highContrast ? 'ON' : 'OFF'}
                 </button>
-              ))}
+                {onOpenShortcuts && (
+                  <button
+                    onClick={() => { closeMenu(); onOpenShortcuts() }}
+                    className="px-4 py-2 rounded-lg glass text-white/40 hover:text-white/70 text-sm font-mono transition-colors"
+                    aria-label="Open keyboard shortcuts"
+                  >
+                    ?
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-
-          {/* High contrast in mobile */}
-          <div className="mt-3 px-3">
-            <button
-              onClick={toggleHighContrast}
-              aria-pressed={highContrast}
-              className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
-                highContrast
-                  ? 'bg-genomic-cyan/20 text-genomic-cyan border border-genomic-cyan/30'
-                  : 'glass text-white/40 hover:text-white/70'
-              }`}
-            >
-              High contrast {highContrast ? 'ON' : 'OFF'}
-            </button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   )
 }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { api, type PaperDetail as PaperDetailType } from '../lib/api'
 import EntityChip from '../components/EntityChip'
 import Spinner from '../components/Spinner'
@@ -38,11 +37,7 @@ export default function PaperDetail() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-4xl mx-auto px-6 py-12"
-    >
+    <div className="max-w-4xl mx-auto px-6 py-12">
       <button
         onClick={() => navigate(-1)}
         className="text-white/40 hover:text-white text-sm mb-6 flex items-center gap-2 transition-colors group"
@@ -121,6 +116,6 @@ export default function PaperDetail() {
           </section>
         )}
       </article>
-    </motion.div>
+    </div>
   )
 }
