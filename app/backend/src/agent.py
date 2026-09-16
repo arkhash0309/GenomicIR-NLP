@@ -2,7 +2,7 @@ import json, re, asyncio
 from typing import AsyncGenerator
 import anthropic
 from .search import hybrid_search
-from .graph import get_papers_by_entity, get_entity_connections, get_subgraph
+from .graph import get_papers_by_entity, get_entity_connections
 from .data_store import get_paper_by_id
 from .ner import get_paper_entities, extract_entities_from_text
 
@@ -54,7 +54,10 @@ def _execute_tool(name: str, inp: dict) -> str:
                                  "url": r.paper.url, "score": r.score,
                                  "abstract_snippet": r.paper.abstract[:300]} for r in results])
         if name == "get_papers_by_entity":
-            ids = get_papers_by_entity(inp["name"])
+            entity_type = inp.get("entity_type", "")
+            entity_name = inp["name"]
+            search_name = f"{entity_type}:{entity_name}" if entity_type else entity_name
+            ids = get_papers_by_entity(search_name)
             papers = [get_paper_by_id(i) for i in ids[:10]]
             return json.dumps([{"id": p.id, "title": p.title, "doi": p.doi}
                                 for p in papers if p])

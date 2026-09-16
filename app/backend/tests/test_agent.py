@@ -46,11 +46,17 @@ async def test_run_agent_stream_yields_sse_events(mock_papers):
 
 @pytest.mark.asyncio
 async def test_execute_tool_hybrid_search(mock_papers):
-    from src import data_store as ds, search as search_module
+    from src import data_store as ds
+    from src.models import SearchResult
+    from src.agent import _execute_tool
+    import json
+
     ds._papers = mock_papers
-    with patch("src.agent._execute_tool") as mock_tool:
-        mock_tool.return_value = json.dumps([{"id": 0, "title": "BRCA1 paper", "doi": "10.x/1", "url": "http://x", "score": 0.9, "abstract_snippet": "BRCA1..."}])
-        from src.agent import _execute_tool
+    fake_result = SearchResult(paper=mock_papers[0], score=0.9, rank=0)
+
+    with patch("src.agent.hybrid_search", return_value=[fake_result]):
         result = _execute_tool("hybrid_search", {"query": "BRCA1 cancer", "k": 3})
         data = json.loads(result)
         assert isinstance(data, list)
+        assert len(data) > 0
+        assert data[0]["title"] == mock_papers[0].title
