@@ -62,9 +62,10 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
     const sim = simRef.current
     sim.nodes(simNodes)
     ;(sim.force('link') as d3.ForceLink<SimNode, SimEdge>).links(simEdges)
+    ;(sim.force('center') as d3.ForceCenter<SimNode>)?.x(w / 2).y(h / 2)
 
     g.selectAll<SVGLineElement, SimEdge>('.edge')
-      .data(simEdges, d => `${(d.source as SimNode).id ?? d.source}-${(d.target as SimNode).id ?? d.target}`)
+      .data(simEdges, d => `${d.source as string}-${d.target as string}`)
       .join(
         enter => enter.append('line').attr('class', 'edge')
           .attr('stroke', 'rgba(255,255,255,0.12)')
