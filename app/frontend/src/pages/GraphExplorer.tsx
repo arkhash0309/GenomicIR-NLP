@@ -5,6 +5,7 @@ import KnowledgeGraph from '../components/KnowledgeGraph'
 import EntityChip from '../components/EntityChip'
 import Spinner from '../components/Spinner'
 import { useToast } from '../contexts/ToastContext'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export default function GraphExplorer() {
   const [query, setQuery] = useState('')
@@ -13,6 +14,7 @@ export default function GraphExplorer() {
   const [loading, setLoading] = useState(false)
   const inputId = useId()
   const { error } = useToast()
+  useDocumentTitle('Graph Explorer')
 
   const explore = async () => {
     if (!query.trim()) return

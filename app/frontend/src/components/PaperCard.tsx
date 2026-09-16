@@ -5,6 +5,31 @@ import type { SearchResult } from '../lib/api'
 
 interface Props { result: SearchResult; showScore?: boolean }
 
+function ScoreBadge({ score }: { score: number }) {
+  const pct = Math.min(100, Math.round(score * 100))
+  const color =
+    pct >= 70 ? 'bg-genomic-emerald' :
+    pct >= 45 ? 'bg-genomic-cyan' :
+    'bg-genomic-amber'
+
+  return (
+    <div
+      className="shrink-0 flex flex-col items-end gap-1"
+      aria-label={`Relevance score: ${score.toFixed(3)}`}
+      title={`Relevance score: ${score.toFixed(3)}`}
+    >
+      <span className="text-xs text-white/40 font-mono">{score.toFixed(3)}</span>
+      <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${color}`}
+          style={{ width: `${pct}%` }}
+          aria-hidden="true"
+        />
+      </div>
+    </div>
+  )
+}
+
 export default function PaperCard({ result, showScore }: Props) {
   const { paper, score } = result
   return (
@@ -21,15 +46,7 @@ export default function PaperCard({ result, showScore }: Props) {
         >
           {paper.title}
         </Link>
-        {showScore && (
-          <span
-            className="shrink-0 text-xs text-genomic-cyan font-mono bg-genomic-cyan/10 px-2 py-1 rounded-md border border-genomic-cyan/20"
-            aria-label={`Relevance score: ${score.toFixed(3)}`}
-            title={`Relevance score: ${score.toFixed(3)}`}
-          >
-            {score.toFixed(3)}
-          </span>
-        )}
+        {showScore && <ScoreBadge score={score} />}
       </div>
 
       <p className="text-white/50 text-xs mb-3">

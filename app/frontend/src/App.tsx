@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { Suspense, lazy, useState, useCallback } from 'react'
+import { Suspense, lazy, useState, useCallback, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import Nav from './components/Nav'
 import SkipLink from './components/SkipLink'
 import Spinner from './components/Spinner'
 import BackToTop from './components/BackToTop'
+import Footer from './components/Footer'
 import PageWrapper from './components/PageWrapper'
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -18,6 +19,12 @@ const Search        = lazy(() => import('./pages/Search'))
 const GraphExplorer = lazy(() => import('./pages/GraphExplorer'))
 const PaperDetail   = lazy(() => import('./pages/PaperDetail'))
 const NotFound      = lazy(() => import('./pages/NotFound'))
+
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }) }, [pathname])
+  return null
+}
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -45,14 +52,18 @@ function AppShell() {
       <SkipLink />
       <Nav onOpenShortcuts={openShortcuts} />
       <BackToTop />
-      <main id="main-content" className="min-h-screen pt-16" tabIndex={-1}>
-        <Suspense fallback={
-          <div className="flex flex-col items-center justify-center h-64 gap-3" role="status">
-            <Spinner size="lg" label="Loading page…" />
-          </div>
-        }>
-          <AnimatedRoutes />
-        </Suspense>
+      <ScrollToTop />
+      <main id="main-content" className="min-h-screen pt-16 flex flex-col" tabIndex={-1}>
+        <div className="flex-1">
+          <Suspense fallback={
+            <div className="flex flex-col items-center justify-center h-64 gap-3" role="status">
+              <Spinner size="lg" label="Loading page…" />
+            </div>
+          }>
+            <AnimatedRoutes />
+          </Suspense>
+        </div>
+        <Footer />
       </main>
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </>

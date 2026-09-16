@@ -2,19 +2,46 @@ import { useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import SearchBar from '../components/SearchBar'
 import PaperCard from '../components/PaperCard'
-import Spinner from '../components/Spinner'
+import Skeleton from '../components/Skeleton'
 import KeyboardHint from '../components/KeyboardHint'
 import { api, type SearchResult } from '../lib/api'
 import { useToast } from '../contexts/ToastContext'
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+
+const EXAMPLE_SEARCHES = [
+  'CRISPR genome editing', 'BRCA1 breast cancer', 'RNA splicing', 'epigenomics methylation',
+]
+
+function SearchSkeleton() {
+  return (
+    <div className="mt-8 space-y-4" aria-hidden="true">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="glass rounded-xl p-5 space-y-3">
+          <div className="flex justify-between gap-4">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+          <Skeleton className="h-3 w-1/3" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-5/6" />
+            <Skeleton className="h-3 w-4/6" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function Search() {
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState('')
   const resultsRef = useRef<HTMLDivElement>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
   const { error } = useToast()
+
+  useDocumentTitle(query ? `"${query}" — Search` : 'Search')
 
   const focusSearch = useCallback(() => {
     const input = document.querySelector<HTMLInputElement>('[role="search"] input')
@@ -47,16 +74,21 @@ export default function Search() {
 
       <div className="space-y-2">
         <SearchBar onSearch={handleSearch} loading={loading} />
-        <div className="flex justify-end">
-          <KeyboardHint keys={['/']} label="to focus search" />
+        <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-1.5">
+            {!query && EXAMPLE_SEARCHES.map(s => (
+              <button
+                key={s}
+                onClick={() => handleSearch(s)}
+                className="text-xs glass px-2.5 py-1 rounded-md text-white/40 hover:text-white/70 transition-colors"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          <KeyboardHint keys={['/']} label="to focus" />
         </div>
       </div>
-
-      {loading && (
-        <div className="flex justify-center py-16" role="status">
-          <Spinner size="lg" label="Searching papers…" />
-        </div>
-      )}
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {loading
@@ -67,6 +99,8 @@ export default function Search() {
               ? 'No results found'
               : ''}
       </div>
+
+      {loading && <SearchSkeleton />}
 
       <AnimatePresence>
         {!loading && results.length > 0 && (

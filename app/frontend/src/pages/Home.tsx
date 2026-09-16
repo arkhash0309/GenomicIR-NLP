@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { api, type Stats } from '../lib/api'
 import { useTheme } from '../contexts/ThemeContext'
 import Skeleton from '../components/Skeleton'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 function AnimatedCount({ target }: { target: number }) {
   const [val, setVal] = useState(0)
@@ -134,6 +135,7 @@ export default function Home() {
   const [statsLoading, setStatsLoading] = useState(true)
   const { theme } = useTheme()
   const isLight = theme === 'light'
+  useDocumentTitle()
 
   useEffect(() => {
     api.stats().then(setStats).catch(() => {}).finally(() => setStatsLoading(false))

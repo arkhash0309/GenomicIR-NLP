@@ -10,6 +10,7 @@ import KeyboardHint from '../components/KeyboardHint'
 import type { GraphNode } from '../lib/api'
 import { useToast } from '../contexts/ToastContext'
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 const EXAMPLE_QUESTIONS = [
   'What is the role of BRCA1 in hereditary breast cancer?',
@@ -45,6 +46,7 @@ export default function Ask() {
   const inputRef = useRef<HTMLInputElement>(null)
   const traceSeq = useRef(0)
 
+  useDocumentTitle('Research Assistant')
   useKeyboardShortcut({ '/': () => { inputRef.current?.focus(); inputRef.current?.select() } })
 
   const handleEvent = useCallback((e: SSEEvent) => {
