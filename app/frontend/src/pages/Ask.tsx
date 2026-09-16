@@ -1,5 +1,6 @@
-import { useState, useCallback, useId, useRef } from 'react'
+import { useState, useCallback, useId, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useSearchParams } from 'react-router-dom'
 import { useSSE, type SSEEvent } from '../hooks/useSSE'
 import { useGraph } from '../hooks/useGraph'
 import KnowledgeGraph from '../components/KnowledgeGraph'
@@ -24,13 +25,19 @@ const LEGEND_ITEMS: [string, string][] = [
 ]
 
 export default function Ask() {
-  const [question, setQuestion] = useState('')
+  const [searchParams] = useSearchParams()
+  const [question, setQuestion] = useState(() => searchParams.get('q') ?? '')
   const [active, setActive] = useState(false)
   const [trace, setTrace] = useState<TraceEntry[]>([])
   const [answer, setAnswer] = useState('')
   const [citations, setCitations] = useState<string[]>([])
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const { nodes, edges, addNodes, addEdges, reset } = useGraph()
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q) setQuestion(q)
+  }, [searchParams])
+
   const { stream, cancel } = useSSE()
   const { error: toastError } = useToast()
   const uid = useId()
