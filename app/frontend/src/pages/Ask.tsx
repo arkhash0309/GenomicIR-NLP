@@ -6,6 +6,7 @@ import KnowledgeGraph from '../components/KnowledgeGraph'
 import ReasoningTrace, { type TraceEntry } from '../components/ReasoningTrace'
 import AnswerCard from '../components/AnswerCard'
 import type { GraphNode } from '../lib/api'
+import { useToast } from '../contexts/ToastContext'
 
 const EXAMPLE_QUESTIONS = [
   'What is the role of BRCA1 in hereditary breast cancer?',
@@ -29,6 +30,7 @@ export default function Ask() {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const { nodes, edges, addNodes, addEdges, reset } = useGraph()
   const { stream, cancel } = useSSE()
+  const { error: toastError } = useToast()
   const uid = useId()
   const inputId = useId()
   const traceSeq = useRef(0)
@@ -66,20 +68,25 @@ export default function Ask() {
     traceSeq.current = 0
 
     let answerBuf = ''
-    await stream(
-      'http://localhost:8000/ask',
-      { question },
-      (e) => {
-        if (e.type === 'reasoning') {
-          answerBuf += e.text as string
-          setAnswer(answerBuf)
-        } else if (e.type === 'tool_call') {
-          answerBuf = ''
-          setAnswer('')
+    try {
+      await stream(
+        'http://localhost:8000/ask',
+        { question },
+        (e) => {
+          if (e.type === 'reasoning') {
+            answerBuf += e.text as string
+            setAnswer(answerBuf)
+          } else if (e.type === 'tool_call') {
+            answerBuf = ''
+            setAnswer('')
+          }
+          handleEvent(e)
         }
-        handleEvent(e)
-      }
-    )
+      )
+    } catch {
+      toastError('Connection to research assistant failed — is the backend running?')
+      setActive(false)
+    }
   }
 
   return (

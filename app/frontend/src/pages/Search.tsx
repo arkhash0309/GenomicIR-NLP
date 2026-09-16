@@ -2,13 +2,16 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import SearchBar from '../components/SearchBar'
 import PaperCard from '../components/PaperCard'
+import Spinner from '../components/Spinner'
 import { api, type SearchResult } from '../lib/api'
+import { useToast } from '../contexts/ToastContext'
 
 export default function Search() {
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState('')
   const resultsRef = useRef<HTMLDivElement>(null)
+  const { error } = useToast()
 
   const handleSearch = async (q: string) => {
     setQuery(q)
@@ -16,8 +19,9 @@ export default function Search() {
     try {
       const data = await api.search(q, 10)
       setResults(data.results)
-      // Move focus to results after they load
       setTimeout(() => resultsRef.current?.focus(), 100)
+    } catch {
+      error('Search failed — check that the backend is running on port 8000.')
     } finally {
       setLoading(false)
     }
@@ -32,7 +36,13 @@ export default function Search() {
 
       <SearchBar onSearch={handleSearch} loading={loading} />
 
-      {/* Live region for result count announcements */}
+      {loading && (
+        <div className="flex justify-center py-16" role="status" aria-label="Searching…">
+          <Spinner size="lg" label="Searching papers…" />
+        </div>
+      )}
+
+      {/* Screen-reader live region for result counts */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {loading
           ? 'Searching…'
@@ -44,18 +54,9 @@ export default function Search() {
       </div>
 
       <AnimatePresence>
-        {results.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mt-8 space-y-4"
-          >
-            <div
-              ref={resultsRef}
-              tabIndex={-1}
-              className="focus:outline-none"
-              aria-label={`Search results: ${results.length} papers for "${query}"`}
-            >
+        {!loading && results.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8 space-y-4">
+            <div ref={resultsRef} tabIndex={-1} className="focus:outline-none">
               <p className="text-white/40 text-sm mb-4" role="status">
                 {results.length} results for &ldquo;{query}&rdquo;
               </p>
@@ -68,6 +69,17 @@ export default function Search() {
               </ol>
             </div>
           </motion.div>
+        )}
+
+        {!loading && query && results.length === 0 && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-12 text-center text-white/30 text-sm"
+            role="status"
+          >
+            No results found for &ldquo;{query}&rdquo;
+          </motion.p>
         )}
       </AnimatePresence>
     </div>

@@ -109,6 +109,25 @@ html.light {
   }
 }
 
+/* ── Font size scaling (scoped to main content, nav stays usable) ── */
+html.text-lg-base  #main-content { font-size: 18px; }
+html.text-xl-base  #main-content { font-size: 20px; }
+
+/* ── Smooth scrollbar ─────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+* { scrollbar-width: thin; scrollbar-color: rgba(6,182,212,0.3) transparent; }
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.3); border-radius: 3px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(6,182,212,0.5); }
+
+html.light *         { scrollbar-color: rgba(6,182,212,0.4) rgba(0,0,0,0.05); }
+html.light *::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); }
+html.light *::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.4); }
+
+/* ── Selection color ──────────────────────────────────────────────── */
+::selection { background: rgba(6,182,212,0.25); color: inherit; }
+
 /* ── Light-mode overrides for Tailwind white-opacity utilities ─────── */
 html.light .text-white    { color: var(--text-100) !important; }
 html.light .text-white\/90 { color: var(--text-90) !important; }

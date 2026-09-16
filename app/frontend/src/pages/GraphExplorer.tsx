@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { api, type SubgraphResponse, type GraphNode } from '../lib/api'
 import KnowledgeGraph from '../components/KnowledgeGraph'
 import EntityChip from '../components/EntityChip'
+import Spinner from '../components/Spinner'
+import { useToast } from '../contexts/ToastContext'
 
 export default function GraphExplorer() {
   const [query, setQuery] = useState('')
@@ -10,6 +12,7 @@ export default function GraphExplorer() {
   const [selected, setSelected] = useState<GraphNode | null>(null)
   const [loading, setLoading] = useState(false)
   const inputId = useId()
+  const { error } = useToast()
 
   const explore = async () => {
     if (!query.trim()) return
@@ -19,6 +22,11 @@ export default function GraphExplorer() {
       const data = await api.subgraph(names)
       setGraph(data)
       setSelected(null)
+      if (data.nodes.length === 0) {
+        error('No entities found — try different names or check spelling.')
+      }
+    } catch {
+      error('Graph query failed — check that the backend is running on port 8000.')
     } finally {
       setLoading(false)
     }
@@ -34,7 +42,7 @@ export default function GraphExplorer() {
         <p className="text-white/50">Explore biomedical entity co-occurrence network</p>
       </header>
 
-      <div className="flex gap-3 mb-6" role="group" aria-label="Entity search">
+      <div className="flex gap-3 mb-2" role="group" aria-label="Entity search">
         <label htmlFor={inputId} className="sr-only">
           Comma-separated entity names (e.g. BRCA1, breast cancer)
         </label>
@@ -53,21 +61,15 @@ export default function GraphExplorer() {
           disabled={loading || !query.trim()}
           aria-label={loading ? 'Loading graph…' : 'Explore entity graph'}
           aria-busy={loading}
-          className="px-5 py-3 bg-genomic-cyan text-navy-DEFAULT font-semibold rounded-xl hover:bg-genomic-cyan/90 disabled:opacity-50 transition-colors"
+          className="px-5 py-3 bg-genomic-cyan text-navy-DEFAULT font-semibold rounded-xl hover:bg-genomic-cyan/90 disabled:opacity-50 transition-colors flex items-center gap-2"
         >
-          {loading ? (
-            <>
-              <span className="sr-only">Loading…</span>
-              <span aria-hidden="true">…</span>
-            </>
-          ) : 'Explore'}
+          {loading ? <Spinner size="sm" label="Loading graph…" /> : 'Explore'}
         </button>
       </div>
       <p id="explorer-hint" className="text-white/30 text-xs mb-6">
         Enter one or more biomedical entity names separated by commas, then press Enter or click Explore.
       </p>
 
-      {/* Live region for graph updates */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {graph.nodes.length > 0
           ? `Graph loaded: ${graph.nodes.length} nodes and ${graph.edges.length} connections`
@@ -80,7 +82,6 @@ export default function GraphExplorer() {
           animate={{ opacity: 1 }}
           className="grid grid-cols-1 lg:grid-cols-3 gap-4"
         >
-          {/* Graph */}
           <div
             className="lg:col-span-2 glass rounded-2xl h-[600px] overflow-hidden"
             aria-label={`Entity co-occurrence graph: ${graph.nodes.length} nodes, ${graph.edges.length} edges`}
@@ -93,7 +94,6 @@ export default function GraphExplorer() {
             />
           </div>
 
-          {/* Sidebar */}
           <aside className="space-y-4" aria-label="Graph details">
             <div className="glass rounded-2xl p-4">
               <h2 className="text-white/40 text-xs mb-3 font-medium uppercase tracking-wider">Summary</h2>
@@ -108,13 +108,19 @@ export default function GraphExplorer() {
             </div>
 
             {selected && (
-              <div className="glass rounded-2xl p-4" role="status" aria-label={`Selected node: ${selected.label}`}>
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass rounded-2xl p-4"
+                role="status"
+                aria-label={`Selected node: ${selected.label}`}
+              >
                 <h2 className="text-white/40 text-xs mb-2 font-medium uppercase tracking-wider">Selected</h2>
                 <p className="font-semibold text-white mb-2">{selected.label}</p>
                 {selected.type !== 'paper' && (
                   <EntityChip name={selected.type} type={selected.type as any} />
                 )}
-              </div>
+              </motion.div>
             )}
 
             <div className="glass rounded-2xl p-4 max-h-72 overflow-y-auto" aria-label="Entity nodes list">
