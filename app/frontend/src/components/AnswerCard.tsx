@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import CopyButton from './CopyButton'
+import MarkdownContent from './MarkdownContent'
 
 interface Props { answer: string; citations: string[] }
 
@@ -19,7 +20,7 @@ export default function AnswerCard({ answer, citations }: Props) {
       aria-live="polite"
       aria-atomic="false"
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-genomic-cyan font-semibold text-sm" id="answer-heading">Answer</h2>
         <CopyButton
           text={fullText}
@@ -27,12 +28,12 @@ export default function AnswerCard({ answer, citations }: Props) {
           className="text-white/30 hover:text-white/60 px-2 py-1 glass rounded-lg text-xs"
         />
       </div>
-      <p className="text-white/90 leading-relaxed whitespace-pre-wrap" aria-labelledby="answer-heading">
-        {answer}
-      </p>
+      <div aria-labelledby="answer-heading">
+        <MarkdownContent content={answer} />
+      </div>
       {citations.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-white/10">
-          <h3 className="text-white/40 text-xs mb-2" id="citations-heading">
+        <div className="mt-5 pt-4 border-t border-white/10">
+          <h3 className="text-white/40 text-xs mb-3 font-medium uppercase tracking-wider" id="citations-heading">
             Citations ({citations.length})
           </h3>
           <ul className="flex flex-wrap gap-2 list-none p-0 m-0" aria-labelledby="citations-heading">

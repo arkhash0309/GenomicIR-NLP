@@ -9,6 +9,7 @@ import Footer from './components/Footer'
 import PageWrapper from './components/PageWrapper'
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal'
 import ErrorBoundary from './components/ErrorBoundary'
+import RouteAnnouncer from './components/RouteAnnouncer'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { FontSizeProvider } from './contexts/FontSizeContext'
@@ -54,6 +55,7 @@ function AppShell() {
       <Nav onOpenShortcuts={openShortcuts} />
       <BackToTop />
       <ScrollToTop />
+      <RouteAnnouncer />
       <main id="main-content" className="min-h-screen pt-16 flex flex-col" tabIndex={-1}>
         <div className="flex-1">
           <ErrorBoundary>

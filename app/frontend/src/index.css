@@ -4,6 +4,7 @@
 
 /* ── CSS custom properties (dark = default) ──────────────────────── */
 :root {
+  color-scheme: dark;
   --bg:            #0a0f1e;
   --bg-800:        #0d1426;
   --surface:       rgba(255,255,255,0.05);
@@ -23,6 +24,7 @@
 }
 
 html.light {
+  color-scheme: light;
   --bg:            #f0f6ff;
   --bg-800:        #e4eefb;
   --surface:       rgba(255,255,255,0.88);

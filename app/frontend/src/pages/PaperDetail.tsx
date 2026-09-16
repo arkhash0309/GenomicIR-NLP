@@ -4,12 +4,14 @@ import { api, type PaperDetail as PaperDetailType } from '../lib/api'
 import EntityChip from '../components/EntityChip'
 import Spinner from '../components/Spinner'
 import CopyButton from '../components/CopyButton'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 export default function PaperDetail() {
   const { id } = useParams<{ id: string }>()
   const [paper, setPaper] = useState<PaperDetailType | null>(null)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  useDocumentTitle(paper?.title ? paper.title.slice(0, 60) : 'Paper')
 
   useEffect(() => {
     if (!id) return
