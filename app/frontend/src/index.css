@@ -130,6 +130,17 @@ html.light *::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.4); }
 /* ── Selection color ──────────────────────────────────────────────── */
 ::selection { background: rgba(6,182,212,0.25); color: inherit; }
 
+/* ── Print styles ─────────────────────────────────────────────────── */
+@media print {
+  nav, .fixed, button, footer, [aria-hidden="true"] { display: none !important; }
+  body { background: #fff !important; color: #000 !important; font-size: 12pt; }
+  .glass { background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important; }
+  a { color: #0066cc; text-decoration: underline; }
+  h1, h2, h3 { color: #000 !important; }
+  main { padding-top: 0 !important; }
+  .text-gradient { -webkit-text-fill-color: #0a0f1e !important; background: none !important; color: #0a0f1e !important; }
+}
+
 /* ── High contrast mode ───────────────────────────────────────────── */
 html.hc {
   --border:     rgba(255,255,255,0.40);

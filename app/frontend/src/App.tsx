@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { Suspense, lazy, useState, useCallback, useEffect } from 'react'
+import { Suspense, lazy, useState, useCallback, useEffect, useTransition } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import Nav from './components/Nav'
 import SkipLink from './components/SkipLink'
@@ -8,6 +8,7 @@ import BackToTop from './components/BackToTop'
 import Footer from './components/Footer'
 import PageWrapper from './components/PageWrapper'
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal'
+import TopLoadingBar from './components/TopLoadingBar'
 import ErrorBoundary from './components/ErrorBoundary'
 import RouteAnnouncer from './components/RouteAnnouncer'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -28,8 +29,14 @@ function ScrollToTop() {
   return null
 }
 
-function AnimatedRoutes() {
+function AnimatedRoutes({ onLoadingChange }: { onLoadingChange: (v: boolean) => void }) {
   const location = useLocation()
+  const [isPending, startTransition] = useTransition()
+
+  useEffect(() => { onLoadingChange(isPending) }, [isPending, onLoadingChange])
+
+  const navigate = (fn: () => void) => { startTransition(fn) }
+
   return (
     <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
@@ -46,12 +53,14 @@ function AnimatedRoutes() {
 
 function AppShell() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [pageLoading, setPageLoading] = useState(false)
   const openShortcuts = useCallback(() => setShortcutsOpen(true), [])
   useKeyboardShortcut({ '?': openShortcuts })
 
   return (
     <>
       <SkipLink />
+      <TopLoadingBar loading={pageLoading} />
       <Nav onOpenShortcuts={openShortcuts} />
       <BackToTop />
       <ScrollToTop />
@@ -60,11 +69,12 @@ function AppShell() {
         <div className="flex-1">
           <ErrorBoundary>
             <Suspense fallback={
-              <div className="flex flex-col items-center justify-center h-64 gap-3" role="status">
+              <div className="flex flex-col items-center justify-center h-64 gap-3" role="status"
+                   aria-label="Loading page content">
                 <Spinner size="lg" label="Loading page…" />
               </div>
             }>
-              <AnimatedRoutes />
+              <AnimatedRoutes onLoadingChange={setPageLoading} />
             </Suspense>
           </ErrorBoundary>
         </div>

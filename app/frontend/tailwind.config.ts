@@ -10,7 +10,10 @@ export default {
         genomic: { cyan: '#06b6d4', emerald: '#10b981', rose: '#f43f5e', amber: '#f59e0b' },
         surface: { DEFAULT: 'var(--surface)', border: 'var(--border)' },
       },
-      fontFamily: { mono: ['JetBrains Mono', 'monospace'] }
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+      },
     }
   }
 } satisfies Config

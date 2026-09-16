@@ -165,7 +165,7 @@ export default function Home() {
             id="hero-heading"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-5xl font-bold leading-tight mb-6"
+            className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 tracking-tight"
           >
             Decode the literature of{' '}
             <span className="text-gradient">life itself</span>
@@ -173,7 +173,7 @@ export default function Home() {
           <motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-white/60 text-lg mb-10"
+            className="text-white/60 text-lg md:text-xl mb-10 max-w-2xl mx-auto"
           >
             An agentic Claude-powered research assistant over 7,000+ bioRxiv genomics papers —
             hybrid retrieval, live knowledge graphs, grounded answers.
@@ -183,14 +183,18 @@ export default function Home() {
             transition={{ delay: 0.3 }}
             className="flex gap-4 justify-center flex-wrap"
           >
-            <Link to="/ask"
-              className="px-7 py-3.5 bg-genomic-cyan text-navy-DEFAULT font-semibold rounded-xl hover:bg-genomic-cyan/90 transition-colors">
-              Ask a question →
-            </Link>
-            <Link to="/search"
-              className="px-7 py-3.5 glass rounded-xl hover:border-white/30 transition-colors">
-              Search papers
-            </Link>
+            <motion.div whileTap={{ scale: 0.97 }} whileHover={{ scale: 1.02 }}>
+              <Link to="/ask"
+                className="inline-block px-7 py-3.5 bg-genomic-cyan text-navy-DEFAULT font-semibold rounded-xl hover:bg-genomic-cyan/90 transition-colors shadow-lg shadow-genomic-cyan/20">
+                Ask a question →
+              </Link>
+            </motion.div>
+            <motion.div whileTap={{ scale: 0.97 }} whileHover={{ scale: 1.02 }}>
+              <Link to="/search"
+                className="inline-block px-7 py-3.5 glass rounded-xl hover:border-white/30 transition-colors">
+                Search papers
+              </Link>
+            </motion.div>
           </motion.div>
         </div>
       </section>
