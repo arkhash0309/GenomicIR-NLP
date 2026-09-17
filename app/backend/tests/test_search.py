@@ -1,6 +1,7 @@
 import pytest
-from src.search import hybrid_search, load_search_indexes
+
 from src.data_store import load_papers
+from src.search import hybrid_search, load_search_indexes
 
 
 @pytest.fixture(scope="module", autouse=True)

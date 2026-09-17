@@ -1,5 +1,8 @@
-import json, pytest, asyncio
-from unittest.mock import patch, AsyncMock, MagicMock
+import asyncio
+import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 async def _async_iter(items):
@@ -46,10 +49,11 @@ async def test_run_agent_stream_yields_sse_events(mock_papers):
 
 @pytest.mark.asyncio
 async def test_execute_tool_hybrid_search(mock_papers):
-    from src import data_store as ds
-    from src.models import SearchResult
-    from src.agent import _execute_tool
     import json
+
+    from src import data_store as ds
+    from src.agent import _execute_tool
+    from src.models import SearchResult
 
     ds._papers = mock_papers
     fake_result = SearchResult(paper=mock_papers[0], score=0.9, rank=0)

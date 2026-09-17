@@ -1,5 +1,6 @@
 import pytest
-from src.ner import load_ner, extract_entities_from_text, build_entity_cache, get_paper_entities
+
+from src.ner import build_entity_cache, extract_entities_from_text, get_paper_entities, load_ner
 
 
 @pytest.fixture(scope="module", autouse=True)

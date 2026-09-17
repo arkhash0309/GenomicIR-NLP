@@ -1,6 +1,6 @@
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -15,9 +15,9 @@ async def client():
     """
     # Run startup (loads papers, search indexes, NER, entity cache, graph)
     from src.data_store import load_papers
-    from src.search import load_search_indexes
-    from src.ner import load_ner, load_entity_cache, build_entity_cache
     from src.graph import build_graph
+    from src.ner import build_entity_cache, load_entity_cache, load_ner
+    from src.search import load_search_indexes
 
     papers = load_papers()
     load_search_indexes()
