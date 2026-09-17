@@ -6,11 +6,11 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./notebooks:/repo/notebooks:ro
+      - ./pipeline:/repo/pipeline:ro
       - ./app/backend/data:/repo/app/backend/data
       - hf_cache:/root/.cache/huggingface
     env_file:
-      - path: app/backend/.env
+      - path: .env
         required: false
     environment:
       - PORT=8000
