@@ -1,16 +1,21 @@
-import json, re, asyncio
+import asyncio
+import json
+import re
 from typing import AsyncGenerator
+
 import anthropic
-from .search import hybrid_search
-from .graph import get_papers_by_entity, get_entity_connections
+
+from . import config
 from .data_store import get_paper_by_id
-from .ner import get_paper_entities, extract_entities_from_text
+from .graph import get_entity_connections, get_papers_by_entity
+from .ner import extract_entities_from_text, get_paper_entities
+from .search import hybrid_search
 
 client = anthropic.AsyncAnthropic()
 
 TOOLS = [
     {"name": "hybrid_search",
-     "description": "Search the 7,070 genomics paper corpus using hybrid semantic+lexical retrieval with reranking.",
+     "description": f"Search the {config.CORPUS_LABEL} corpus using hybrid semantic+lexical retrieval with reranking.",
      "input_schema": {"type": "object", "properties": {
          "query": {"type": "string"},
          "k": {"type": "integer", "default": 5}
@@ -38,7 +43,7 @@ TOOLS = [
      }, "required": ["query"]}},
 ]
 
-SYSTEM = """You are a genomics research assistant with access to 7,070 bioRxiv genomics papers.
+SYSTEM = f"""You are a {config.CORPUS_DOMAIN} research assistant with access to {config.CORPUS_LABEL}.
 Strategy: (1) extract key entities from the question, (2) hybrid_search for broad retrieval,
 (3) use entity connections to expand via knowledge graph, (4) get_paper_details for top results,
 (5) write a grounded answer citing papers as [Author et al., DOI].
@@ -108,7 +113,7 @@ async def run_agent_stream(question: str) -> AsyncGenerator[str, None]:
         tool_calls: list[dict] = []
         text_buf = ""
         async with client.messages.stream(
-            model="claude-sonnet-4-6", max_tokens=4096,
+            model=config.ANTHROPIC_MODEL, max_tokens=config.AGENT_MAX_TOKENS,
             system=SYSTEM, tools=TOOLS, messages=messages
         ) as stream:
             async for event in stream:
