@@ -10,26 +10,48 @@ import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 const EXAMPLE_SEARCHES = [
-  'CRISPR genome editing', 'BRCA1 breast cancer', 'RNA splicing', 'epigenomics methylation',
+  'CRISPR genome editing',
+  'BRCA1 breast cancer',
+  'RNA splicing',
+  'epigenomics methylation',
+  'single-cell sequencing',
+  'CRISPR off-target',
 ]
 
 function SearchSkeleton() {
   return (
-    <div className="mt-8 space-y-4" aria-hidden="true">
+    <div className="mt-6 space-y-3" aria-hidden="true">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="glass rounded-xl p-5 space-y-3">
+        <div key={i} className="glass rounded-2xl p-5 space-y-3 animate-pulse">
           <div className="flex justify-between gap-4">
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-12 w-3 rounded-full" />
           </div>
-          <Skeleton className="h-3 w-1/3" />
+          <Skeleton className="h-3 w-2/5" />
           <div className="space-y-1.5">
             <Skeleton className="h-3 w-full" />
             <Skeleton className="h-3 w-5/6" />
-            <Skeleton className="h-3 w-4/6" />
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+function ResultsHeader({ count, query }: { count: number; query: string }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2.5">
+        <div className="w-1.5 h-1.5 rounded-full bg-genomic-emerald" />
+        <p className="text-[var(--text-40)] text-sm" role="status">
+          <span className="text-[var(--text-70)] font-semibold">{count}</span>
+          {' '}results for{' '}
+          <span className="text-genomic-cyan font-mono">&ldquo;{query}&rdquo;</span>
+        </p>
+      </div>
+      <span className="text-[10px] font-mono text-[var(--text-25)] uppercase tracking-wider">
+        Hybrid IR
+      </span>
     </div>
   )
 }
@@ -67,29 +89,57 @@ export default function Search() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Hybrid Search</h1>
-        <p className="text-white/50">FAISS semantic + BM25 lexical + cross-encoder reranking</p>
-      </header>
 
-      <div className="space-y-2">
+      {/* Header */}
+      <motion.header
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="mb-10"
+      >
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-8 h-8 rounded-xl bg-genomic-emerald/10 flex items-center justify-center text-genomic-emerald">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Hybrid Search</h1>
+        </div>
+        <p className="text-[var(--text-40)] text-sm">
+          FAISS semantic + BM25 lexical + cross-encoder reranking over 7,000+ bioRxiv papers
+        </p>
+      </motion.header>
+
+      {/* Search input */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+        className="space-y-3 mb-8"
+      >
         <SearchBar onSearch={handleSearch} loading={loading} />
-        <div className="flex items-center justify-between">
-          <div className="flex flex-wrap gap-1.5">
+
+        <div className="flex items-center justify-between px-1">
+          <div className="flex flex-wrap gap-2">
             {!query && EXAMPLE_SEARCHES.map(s => (
-              <button
+              <motion.button
                 key={s}
                 onClick={() => handleSearch(s)}
-                className="text-xs glass px-2.5 py-1 rounded-md text-white/40 hover:text-white/70 transition-colors"
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
+                className="text-[11px] glass px-3 py-1.5 rounded-xl text-[var(--text-35,rgba(240,244,255,0.35))] hover:text-[var(--text-65,rgba(240,244,255,0.65))] hover:border-genomic-emerald/20 transition-all font-mono"
+                style={{ color: 'rgba(240,244,255,0.38)' }}
               >
                 {s}
-              </button>
+              </motion.button>
             ))}
           </div>
           <KeyboardHint keys={['/']} label="to focus" />
         </div>
-      </div>
+      </motion.div>
 
+      {/* Screen reader status */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {loading
           ? 'Searching…'
@@ -100,20 +150,26 @@ export default function Search() {
               : ''}
       </div>
 
+      {/* Loading */}
       {loading && <SearchSkeleton />}
 
+      {/* Results */}
       <AnimatePresence>
         {!loading && results.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8 space-y-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div ref={resultsRef} tabIndex={-1} className="focus:outline-none">
-              <p className="text-white/40 text-sm mb-4" role="status">
-                {results.length} results for &ldquo;{query}&rdquo;
-              </p>
-              <ol className="space-y-4 list-none p-0 m-0" aria-label="Search results">
+              <ResultsHeader count={results.length} query={query} />
+              <ol className="space-y-3 list-none p-0 m-0" aria-label="Search results">
                 {results.map((r, i) => (
-                  <li key={r.paper.id} aria-label={`Result ${i + 1} of ${results.length}`}>
+                  <motion.li
+                    key={r.paper.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    aria-label={`Result ${i + 1} of ${results.length}`}
+                  >
                     <PaperCard result={r} showScore />
-                  </li>
+                  </motion.li>
                 ))}
               </ol>
             </div>
@@ -122,14 +178,19 @@ export default function Search() {
 
         {!loading && query && results.length === 0 && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
             className="mt-16 text-center"
             role="status"
           >
-            <div className="text-4xl mb-4" aria-hidden="true">🔬</div>
-            <p className="text-white/40 text-sm">No results found for &ldquo;{query}&rdquo;</p>
-            <p className="text-white/20 text-xs mt-2">Try different keywords or check spelling</p>
+            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/25">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+              </svg>
+            </div>
+            <p className="text-[var(--text-40)] text-sm mb-1">No results for &ldquo;{query}&rdquo;</p>
+            <p className="text-[var(--text-25)] text-xs">Try different keywords or check spelling</p>
           </motion.div>
         )}
       </AnimatePresence>

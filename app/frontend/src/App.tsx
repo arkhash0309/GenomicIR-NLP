@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { Suspense, lazy, useState, useCallback, useEffect, useTransition } from 'react'
+import { Suspense, lazy, useState, useCallback, useEffect, useTransition, useRef } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import Nav from './components/Nav'
 import SkipLink from './components/SkipLink'
@@ -51,6 +51,49 @@ function AnimatedRoutes({ onLoadingChange }: { onLoadingChange: (v: boolean) => 
   )
 }
 
+function CustomCursor() {
+  const dotRef  = useRef<HTMLDivElement>(null)
+  const ringRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    let rx = 0, ry = 0
+    const onMove = (e: MouseEvent) => {
+      const { clientX: x, clientY: y } = e
+      dotRef.current!.style.left  = x + 'px'
+      dotRef.current!.style.top   = y + 'px'
+      rx += (x - rx) * 0.18
+      ry += (y - ry) * 0.18
+      ringRef.current!.style.left = rx + 'px'
+      ringRef.current!.style.top  = ry + 'px'
+    }
+    const onEnter = () => document.body.classList.add('cursor-hover')
+    const onLeave = () => document.body.classList.remove('cursor-hover')
+    document.addEventListener('mousemove', onMove)
+    const interactives = () => document.querySelectorAll('a,button,[role=button],[tabindex]')
+    let observer: MutationObserver
+    const attachHover = () => {
+      interactives().forEach(el => {
+        el.addEventListener('mouseenter', onEnter)
+        el.addEventListener('mouseleave', onLeave)
+      })
+    }
+    attachHover()
+    observer = new MutationObserver(attachHover)
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      observer.disconnect()
+    }
+  }, [])
+
+  return (
+    <>
+      <div id="cursor-dot"  ref={dotRef}  aria-hidden="true" />
+      <div id="cursor-ring" ref={ringRef} aria-hidden="true" />
+    </>
+  )
+}
+
 function AppShell() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [pageLoading, setPageLoading] = useState(false)
@@ -59,6 +102,7 @@ function AppShell() {
 
   return (
     <>
+      <CustomCursor />
       <SkipLink />
       <TopLoadingBar loading={pageLoading} />
       <Nav onOpenShortcuts={openShortcuts} />
