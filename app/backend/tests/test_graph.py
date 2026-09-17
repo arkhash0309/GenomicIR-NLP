@@ -1,7 +1,8 @@
 import pytest
-from src.graph import build_graph, get_papers_by_entity, get_entity_connections, get_subgraph, graph_stats
-from src.ner import _entity_cache
+
+from src.graph import build_graph, get_entity_connections, get_papers_by_entity, get_subgraph, graph_stats
 from src.models import Paper
+from src.ner import _entity_cache
 
 
 @pytest.fixture(scope="module")

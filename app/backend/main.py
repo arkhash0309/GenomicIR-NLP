@@ -1,13 +1,24 @@
-import os
+# Import torch first so its DLLs load before spaCy/thinc/sentence-transformers
+# pull them in. On some Windows setups the reverse order triggers
+# "WinError 1114: DLL initialization routine failed" (c10.dll). No-op if torch
+# is absent or already imported. Mirrors the workaround in conftest.py.
+try:
+    import torch  # noqa: F401
+except Exception:
+    pass
+
 from contextlib import asynccontextmanager
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from src import config
 from src.data_store import load_papers
-from src.search import load_search_indexes
-from src.ner import load_ner, load_entity_cache, build_entity_cache
 from src.graph import build_graph
-from src.routers import health, search, paper, graph_routes, ask
+from src.ner import build_entity_cache, load_entity_cache, load_ner
+from src.routers import ask, graph_routes, health, paper, search
+from src.search import load_search_indexes
 
 load_dotenv()
 
@@ -34,7 +45,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="GenomicIR-NLP", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173"],
+        allow_origins=config.CORS_ORIGINS,
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -53,6 +64,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=int(os.getenv("PORT", 8000)),
+        port=config.PORT,
         reload=True,
     )

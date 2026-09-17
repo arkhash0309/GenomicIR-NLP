@@ -1,10 +1,10 @@
-from pathlib import Path
 import pandas as pd
+
+from . import config
 from .models import Paper
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_META = _REPO_ROOT / "notebooks" / "5_INFORMATION_RETRIEVAL" / "data" / "metadata.pkl"
-_CSV  = _REPO_ROOT / "notebooks" / "5_INFORMATION_RETRIEVAL" / "data" / "papers_combined_with_abstract_and_summary.csv"
+_META = config.METADATA_PATH
+_CSV = config.CSV_PATH
 
 _papers: list[Paper] = []
 _papers_by_id: dict[int, Paper] = {}

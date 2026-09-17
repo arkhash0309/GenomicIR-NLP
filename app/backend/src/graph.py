@@ -1,6 +1,7 @@
 import networkx as nx
-from .models import GraphNode, GraphEdge, SubgraphResponse
+
 from .data_store import get_papers
+from .models import GraphEdge, GraphNode, SubgraphResponse
 from .ner import get_paper_entities
 
 _G: nx.DiGraph | None = None

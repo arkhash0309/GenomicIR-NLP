@@ -1,0 +1,17 @@
+line-length = 120
+target-version = "py311"
+
+[lint]
+# A pragmatic, non-pedantic default: pyflakes (F) + a subset of pycodestyle (E)
+# plus import sorting (I). Kept lenient so it guides without fighting the code.
+select = ["E", "F", "I", "W"]
+ignore = [
+    "E401",  # multiple imports on one line (used intentionally in a few spots)
+    "E402",  # module-level import not at top (lazy imports)
+    "E501",  # line too long (handled by formatter, not enforced)
+    "E741",  # ambiguous variable name
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["F401", "F811"]
+"__init__.py" = ["F401"]

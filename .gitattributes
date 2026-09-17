@@ -1,0 +1,13 @@
+# Normalize line endings to LF for all text files across platforms.
+* text=auto eol=lf
+
+# Treat known binary assets as binary (never normalize).
+*.pkl binary
+*.faiss binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary

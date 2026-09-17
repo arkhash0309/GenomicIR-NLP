@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "GenomicIR-NLP: Agentic GraphRAG over a scientific paper corpus"
+authors:
+  - family-names: "Saravanakumar"
+    given-names: "Aadhavan Arkhash"
+repository-code: "https://github.com/arkhash0309/GenomicIR-NLP"
+url: "https://github.com/arkhash0309/GenomicIR-NLP"
+abstract: >-
+  An agentic GraphRAG application over 7,070 bioRxiv genomics papers, combining
+  hybrid retrieval (FAISS semantic + BM25 lexical + reciprocal rank fusion +
+  cross-encoder reranking), scispaCy biomedical NER, a NetworkX knowledge graph,
+  and a streaming Claude tool-use agent, with a React + D3 frontend.
+keywords:
+  - graphrag
+  - retrieval-augmented-generation
+  - knowledge-graph
+  - faiss
+  - llm-agent
+  - genomics
+  - fastapi
+  - react
+license: MIT
+version: 1.0.0

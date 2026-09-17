@@ -1,6 +1,7 @@
 import pytest
+
+from src.data_store import _reset_papers, load_papers
 from src.models import Paper
-from src.data_store import load_papers, _reset_papers
 
 
 @pytest.fixture(scope="session")

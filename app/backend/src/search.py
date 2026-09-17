@@ -1,19 +1,20 @@
-from pathlib import Path
 from typing import TYPE_CHECKING
-import numpy as np
+
 import faiss
+import numpy as np
 from rank_bm25 import BM25Okapi
-from .models import SearchResult
+
+from . import config
 from .data_store import get_papers
+from .models import SearchResult
 
 if TYPE_CHECKING:
-    from sentence_transformers import SentenceTransformer, CrossEncoder
+    from sentence_transformers import CrossEncoder, SentenceTransformer
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_FAISS_PATH = _REPO_ROOT / "notebooks" / "5_INFORMATION_RETRIEVAL" / "embeddings" / "papers_index.faiss"
-_EMBED_MODEL = "all-MiniLM-L6-v2"
-_RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-_RRF_K = 60
+_FAISS_PATH = config.FAISS_PATH
+_EMBED_MODEL = config.EMBED_MODEL
+_RERANK_MODEL = config.RERANK_MODEL
+_RRF_K = config.RRF_K
 
 _embedder: "SentenceTransformer | None" = None
 _reranker: "CrossEncoder | None" = None
@@ -28,7 +29,7 @@ def _tokenize(text: str) -> list[str]:
 def load_search_indexes() -> None:
     global _embedder, _reranker, _faiss_index, _bm25
     # Lazy import to avoid DLL loading at collection time on Windows
-    from sentence_transformers import SentenceTransformer, CrossEncoder
+    from sentence_transformers import CrossEncoder, SentenceTransformer
     papers = get_papers()
     _embedder = SentenceTransformer(_EMBED_MODEL)
     _reranker = CrossEncoder(_RERANK_MODEL)

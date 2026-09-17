@@ -1,8 +1,8 @@
 import json
-from pathlib import Path
-import spacy
 
-CACHE_PATH = Path(__file__).resolve().parent.parent / "data" / "entity_cache.json"
+from . import config
+
+CACHE_PATH = config.ENTITY_CACHE_PATH
 
 _bc5cdr = None   # DISEASE, CHEMICAL
 _jnlpba = None   # DNA, RNA, PROTEIN → Gene
@@ -15,6 +15,9 @@ _JNLPBA_MAP = {"DNA": "Gene", "RNA": "Gene", "PROTEIN": "Gene"}
 
 def load_ner() -> None:
     global _bc5cdr, _jnlpba
+    # Lazy import to avoid loading spaCy/scispaCy (and their DLLs) at module
+    # import time — mirrors the lazy import in search.py.
+    import spacy
     _bc5cdr = spacy.load("en_ner_bc5cdr_md")
     _jnlpba = spacy.load("en_ner_jnlpba_md")
 

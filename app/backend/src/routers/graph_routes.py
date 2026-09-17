@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Query
-from ..graph import get_papers_by_entity, get_entity_connections, get_subgraph, graph_stats
+
 from ..data_store import get_paper_by_id
+from ..graph import get_entity_connections, get_papers_by_entity, get_subgraph, graph_stats
 
 router = APIRouter()
 
