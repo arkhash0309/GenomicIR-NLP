@@ -1,0 +1,26 @@
+import { Link } from 'react-router-dom'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+
+export default function NotFound() {
+  useDocumentTitle('Page not found')
+  return (
+    <div
+      className="max-w-lg mx-auto px-6 py-24 text-center"
+      aria-labelledby="not-found-heading"
+    >
+      <div className="text-8xl font-bold text-gradient mb-6 select-none" aria-hidden="true">404</div>
+      <h1 id="not-found-heading" className="text-2xl font-semibold mb-3">Page not found</h1>
+      <p className="text-white/50 mb-8">
+        The page you&rsquo;re looking for doesn&rsquo;t exist or has been moved.
+      </p>
+      <div className="flex flex-wrap gap-3 justify-center">
+        <Link to="/" className="px-6 py-3 bg-genomic-cyan text-navy-DEFAULT font-semibold rounded-xl hover:bg-genomic-cyan/90 transition-colors">
+          Go home
+        </Link>
+        <Link to="/search" className="px-6 py-3 glass rounded-xl hover:border-white/30 transition-colors">
+          Search papers
+        </Link>
+      </div>
+    </div>
+  )
+}

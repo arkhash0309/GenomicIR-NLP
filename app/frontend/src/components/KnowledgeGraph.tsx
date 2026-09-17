@@ -1,5 +1,4 @@
-// src/components/KnowledgeGraph.tsx
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import * as d3 from 'd3'
 import type { GraphNode, GraphEdge } from '../lib/api'
 
@@ -20,21 +19,53 @@ interface Props {
 type SimNode = GraphNode & d3.SimulationNodeDatum
 type SimEdge = { source: SimNode | string; target: SimNode | string; type: string; weight: number }
 
+function getThemeEdgeColor() {
+  return document.documentElement.classList.contains('light')
+    ? 'rgba(15,23,42,0.18)'
+    : 'rgba(255,255,255,0.14)'
+}
+function getThemeNodeStroke() {
+  return document.documentElement.classList.contains('light')
+    ? 'rgba(15,23,42,0.22)'
+    : 'rgba(255,255,255,0.30)'
+}
+
 export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }: Props) {
-  const svgRef = useRef<SVGSVGElement>(null)
-  const simRef = useRef<d3.Simulation<SimNode, SimEdge> | null>(null)
-  const gRef = useRef<SVGGElement | null>(null)
+  const svgRef  = useRef<SVGSVGElement>(null)
+  const simRef  = useRef<d3.Simulation<SimNode, SimEdge> | null>(null)
+  const gRef    = useRef<SVGGElement | null>(null)
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
+  const [scale, setScale] = useState(1)
+
+  const applyZoom = useCallback((factor: number) => {
+    if (!svgRef.current || !zoomRef.current) return
+    const svg = d3.select(svgRef.current)
+    svg.transition().duration(250).call(
+      zoomRef.current.scaleBy as any, factor
+    )
+  }, [])
+
+  const resetZoom = useCallback(() => {
+    if (!svgRef.current || !zoomRef.current) return
+    const svg = d3.select(svgRef.current)
+    svg.transition().duration(300).call(
+      zoomRef.current.transform as any, d3.zoomIdentity
+    )
+  }, [])
 
   useEffect(() => {
     const svg = d3.select(svgRef.current!)
     svg.selectAll('*').remove()
     const g = svg.append('g')
     gRef.current = g.node()
-    svg.call(
-      d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.1, 6])
-        .on('zoom', ev => g.attr('transform', ev.transform))
-    )
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 6])
+      .on('zoom', ev => {
+        g.attr('transform', ev.transform)
+        setScale(ev.transform.k)
+      })
+    zoomRef.current = zoom
+    svg.call(zoom)
     return () => { simRef.current?.stop() }
   }, [])
 
@@ -68,9 +99,9 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
       .data(simEdges, d => `${d.source as string}-${d.target as string}`)
       .join(
         enter => enter.append('line').attr('class', 'edge')
-          .attr('stroke', 'rgba(255,255,255,0.12)')
+          .attr('stroke', getThemeEdgeColor())
           .attr('stroke-width', d => Math.sqrt(d.weight || 1)),
-        update => update,
+        update => update.attr('stroke', getThemeEdgeColor()),
         exit => exit.remove()
       )
 
@@ -84,14 +115,24 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
       .join(
         enter => {
           const eg = enter.append('g').attr('class', 'node').style('cursor', 'pointer')
+            .attr('role', 'button')
+            .attr('tabindex', '0')
+            .attr('aria-label', d => `${d.type}: ${d.label}`)
             .call(drag)
             .on('click', (_, d) => onNodeClick?.(d))
+            .on('keydown', (ev, d) => {
+              if (ev.key === 'Enter' || ev.key === ' ') {
+                ev.preventDefault()
+                onNodeClick?.(d)
+              }
+            })
           eg.append('circle')
             .attr('r', 0)
             .attr('fill', d => NODE_COLOR[d.type] ?? '#6b7280')
-            .attr('stroke', 'rgba(255,255,255,0.3)').attr('stroke-width', 1.5)
+            .attr('stroke', getThemeNodeStroke())
+            .attr('stroke-width', 1.5)
             .transition().duration(400).attr('r', d => NODE_RADIUS[d.type] ?? 7)
-          eg.append('title').text(d => d.label)
+          eg.append('title').text(d => `${d.type}: ${d.label}`)
           return eg
         },
         update => update,
@@ -112,7 +153,42 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
   }, [nodes, edges, onNodeClick])
 
   return (
-    <svg ref={svgRef} className={className ?? 'w-full h-full'}
-      style={{ background: 'transparent' }} />
+    <div className={`relative ${className ?? 'w-full h-full'}`}>
+      <svg
+        ref={svgRef}
+        className="w-full h-full"
+        style={{ background: 'transparent' }}
+        role="img"
+        aria-label={`Knowledge graph with ${nodes.length} nodes and ${edges.length} connections. Use scroll to zoom, drag to pan.`}
+      />
+
+      {/* Zoom controls for keyboard/pointer users */}
+      {nodes.length > 0 && (
+        <div
+          className="absolute bottom-3 left-3 flex items-center gap-1"
+          role="group"
+          aria-label="Graph zoom controls"
+        >
+          <button
+            onClick={() => applyZoom(1.4)}
+            aria-label="Zoom in"
+            className="w-7 h-7 glass rounded flex items-center justify-center text-white/50 hover:text-white transition-colors text-sm font-bold"
+          >+</button>
+          <button
+            onClick={resetZoom}
+            aria-label="Reset zoom"
+            title="Reset zoom"
+            className="px-2 h-7 glass rounded flex items-center justify-center text-white/30 hover:text-white/60 transition-colors font-mono text-xs"
+          >
+            {Math.round(scale * 100)}%
+          </button>
+          <button
+            onClick={() => applyZoom(1 / 1.4)}
+            aria-label="Zoom out"
+            className="w-7 h-7 glass rounded flex items-center justify-center text-white/50 hover:text-white transition-colors text-sm font-bold"
+          >−</button>
+        </div>
+      )}
+    </div>
   )
 }
