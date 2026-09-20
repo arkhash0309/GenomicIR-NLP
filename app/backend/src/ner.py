@@ -1,8 +1,30 @@
 import json
+import re
 
 from . import config
 
 CACHE_PATH = config.ENTITY_CACHE_PATH
+
+_aliases: dict[str, str] = {}
+
+
+def normalize_name(name: str) -> str:
+    return re.sub(r"\s+", " ", name).strip().lower()
+
+
+def load_aliases() -> dict[str, str]:
+    global _aliases
+    _aliases = {}
+    if config.ENTITY_ALIAS_PATH and config.ENTITY_ALIAS_PATH.exists():
+        with open(config.ENTITY_ALIAS_PATH) as f:
+            raw = json.load(f)
+        _aliases = {normalize_name(k): v for k, v in raw.items()}
+    return _aliases
+
+
+def canonicalize_entity(name: str) -> str:
+    target = _aliases.get(normalize_name(name))
+    return target if target is not None else name.strip()
 
 _bc5cdr = None   # DISEASE, CHEMICAL
 _jnlpba = None   # DNA, RNA, PROTEIN → Gene
@@ -20,6 +42,7 @@ def load_ner() -> None:
     import spacy
     _bc5cdr = spacy.load("en_ner_bc5cdr_md")
     _jnlpba = spacy.load("en_ner_jnlpba_md")
+    load_aliases()
 
 
 def load_entity_cache() -> None:
@@ -38,16 +61,19 @@ def save_entity_cache() -> None:
 
 
 def _extract(text: str) -> list[dict]:
-    text = text[:1000]
+    text = text[:config.NER_MAX_CHARS]
     seen: set[str] = set()
     results = []
     for doc, label_map in [(_bc5cdr(text), _BC5CDR_MAP), (_jnlpba(text), _JNLPBA_MAP)]:
         for ent in doc.ents:
             etype = label_map.get(ent.label_)
-            key = f"{etype}:{ent.text.lower()}"
-            if etype and key not in seen:
+            if not etype:
+                continue
+            canonical = canonicalize_entity(ent.text)
+            key = f"{etype}:{normalize_name(canonical)}"
+            if key not in seen:
                 seen.add(key)
-                results.append({"name": ent.text, "type": etype})
+                results.append({"name": canonical, "type": etype})
     return results
 
 
