@@ -1,37 +1,48 @@
+from itertools import combinations
+
 import networkx as nx
 
+from . import config
 from .data_store import get_papers
 from .models import GraphEdge, GraphNode, SubgraphResponse
 from .ner import get_paper_entities
 
 _G: nx.DiGraph | None = None
+_entity_nodes: list[str] = []
+_entity_papers: dict[str, list[int]] = {}
+GRAPH_CACHE_PATH = config.GRAPH_CACHE_PATH
 
 
 def build_graph() -> None:
-    global _G
+    global _G, _entity_nodes, _entity_papers
     papers = get_papers()
     G = nx.DiGraph()
 
     entity_papers: dict[str, list[int]] = {}
+    pair_counts: dict[tuple[str, str], int] = {}
 
     for paper in papers:
         pid = f"paper_{paper.id}"
         G.add_node(pid, kind="paper", label=paper.title[:60], paper_id=paper.id)
+        ekeys: set[str] = set()
         for ent in get_paper_entities(paper.id):
             ekey = f"{ent['type']}:{ent['name'].lower()}"
             if not G.has_node(ekey):
                 G.add_node(ekey, kind=ent["type"], label=ent["name"])
             G.add_edge(pid, ekey, rel="mentions")
             entity_papers.setdefault(ekey, []).append(paper.id)
+            ekeys.add(ekey)
+        for a, b in combinations(sorted(ekeys), 2):
+            pair_counts[(a, b)] = pair_counts.get((a, b), 0) + 1
 
-    keys = list(entity_papers.keys())
-    for i, k1 in enumerate(keys):
-        for k2 in keys[i + 1:]:
-            shared = len(set(entity_papers[k1]) & set(entity_papers[k2]))
-            if shared >= 2:
-                G.add_edge(k1, k2, rel="co_occurs_with", weight=shared)
-                G.add_edge(k2, k1, rel="co_occurs_with", weight=shared)
+    for (a, b), shared in pair_counts.items():
+        if shared >= config.COOCCURRENCE_MIN:
+            G.add_edge(a, b, rel="co_occurs_with", weight=shared)
+            G.add_edge(b, a, rel="co_occurs_with", weight=shared)
+
     _G = G
+    _entity_papers = entity_papers
+    _entity_nodes = list(entity_papers.keys())
 
 
 def graph_stats() -> dict:
