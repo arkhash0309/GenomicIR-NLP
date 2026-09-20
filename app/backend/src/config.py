@@ -86,6 +86,10 @@ BM25_CACHE_PATH = _optional_path(
 # --- LLM / agent ------------------------------------------------------------
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 AGENT_MAX_TOKENS = int(os.getenv("AGENT_MAX_TOKENS", "4096"))
+# Hard ceiling on tool-use rounds per question (guards the streaming loop).
+AGENT_MAX_STEPS = int(os.getenv("AGENT_MAX_STEPS", "8"))
+# Cache the static system prompt + tool schema across turns.
+PROMPT_CACHING = os.getenv("PROMPT_CACHING", "true").lower() in ("1", "true", "yes")
 
 # --- Corpus framing (human/LLM-facing labels) -------------------------------
 # Swap these to re-theme the assistant for a different domain or dataset.
