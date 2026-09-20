@@ -1,7 +1,5 @@
 from typing import TYPE_CHECKING
 
-import faiss
-
 from . import config
 from .data_store import get_papers
 from .models import SearchResult
@@ -22,6 +20,7 @@ _lexical_index: LexicalIndex | None = None
 def load_search_indexes() -> None:
     global _reranker, _vector_store, _lexical_index
     # Lazy import to avoid DLL loading at collection time on Windows.
+    import faiss
     from sentence_transformers import CrossEncoder, SentenceTransformer
     papers = get_papers()
     embedder = SentenceTransformer(config.EMBED_MODEL)
