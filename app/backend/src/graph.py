@@ -62,15 +62,11 @@ def get_papers_by_entity(name: str) -> list[int]:
     if _G is None:
         raise RuntimeError("Graph not built — call build_graph() first")
     needle = name.lower()
-    ids: list[int] = []
-    for node, data in _G.nodes(data=True):
-        if data.get("kind") != "paper" and needle in node.lower():
-            for pred in _G.predecessors(node):
-                if _G.nodes[pred].get("kind") == "paper":
-                    pid = _G.nodes[pred].get("paper_id")
-                    if pid is not None:
-                        ids.append(pid)
-    return list(set(ids))
+    ids: set[int] = set()
+    for node in _entity_nodes:
+        if needle in node:
+            ids.update(_entity_papers.get(node, []))
+    return list(ids)
 
 
 def get_entity_connections(entity: str) -> list[dict]:
@@ -78,15 +74,17 @@ def get_entity_connections(entity: str) -> list[dict]:
         raise RuntimeError("Graph not built — call build_graph() first")
     needle = entity.lower()
     conns: dict[str, dict] = {}
-    for node in _G.nodes:
-        if _G.nodes[node].get("kind") != "paper" and needle in node.lower():
-            for nbr in _G.successors(node):
-                edata = _G.edges[node, nbr]
-                if edata.get("rel") == "co_occurs_with":
-                    nd = _G.nodes[nbr]
-                    w = edata.get("weight", 1)
-                    if nbr not in conns or conns[nbr]["weight"] < w:
-                        conns[nbr] = {"name": nd.get("label", nbr), "type": nd.get("kind", "Entity"), "weight": w}
+    for node in _entity_nodes:
+        if needle not in node:
+            continue
+        for nbr in _G.successors(node):
+            edata = _G.edges[node, nbr]
+            if edata.get("rel") == "co_occurs_with":
+                nd = _G.nodes[nbr]
+                w = edata.get("weight", 1)
+                if nbr not in conns or conns[nbr]["weight"] < w:
+                    conns[nbr] = {"name": nd.get("label", nbr),
+                                  "type": nd.get("kind", "Entity"), "weight": w}
     return sorted(conns.values(), key=lambda x: x["weight"], reverse=True)[:20]
 
 
