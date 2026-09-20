@@ -348,7 +348,7 @@ export default function Ask() {
         )}
       </AnimatePresence>
 
-      <AnswerCard answer={answer} citations={[]} />
+      <AnswerCard answer={answer} />
 
       {/* Grounded citations from retrieved papers */}
       {(citations.length > 0 || unverified.length > 0) && (

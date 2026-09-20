@@ -2,14 +2,10 @@ import { motion } from 'framer-motion'
 import CopyButton from './CopyButton'
 import MarkdownContent from './MarkdownContent'
 
-interface Props { answer: string; citations: string[] }
+interface Props { answer: string }
 
-export default function AnswerCard({ answer, citations }: Props) {
+export default function AnswerCard({ answer }: Props) {
   if (!answer) return null
-
-  const fullText = citations.length > 0
-    ? `${answer}\n\nCitations:\n${citations.map(doi => `https://doi.org/${doi}`).join('\n')}`
-    : answer
 
   return (
     <motion.section
@@ -37,7 +33,7 @@ export default function AnswerCard({ answer, citations }: Props) {
           </h2>
         </div>
         <CopyButton
-          text={fullText}
+          text={answer}
           label="Copy answer"
           className="text-white/25 hover:text-white/55 px-2.5 py-1 glass rounded-lg text-xs transition-colors"
         />
@@ -47,32 +43,6 @@ export default function AnswerCard({ answer, citations }: Props) {
       <div className="px-6 py-5" aria-labelledby="answer-heading">
         <MarkdownContent content={answer} />
       </div>
-
-      {/* Citations */}
-      {citations.length > 0 && (
-        <div className="px-6 py-5 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-          <h3 className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/30 mb-3"
-              id="citations-heading">
-            Citations ({citations.length})
-          </h3>
-          <ul className="flex flex-wrap gap-2 list-none p-0 m-0" aria-labelledby="citations-heading">
-            {citations.map(doi => (
-              <li key={doi}>
-                <a
-                  href={`https://doi.org/${doi}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[11px] text-genomic-cyan/70 hover:text-genomic-cyan bg-genomic-cyan/8 hover:bg-genomic-cyan/12 px-2.5 py-1 rounded-lg font-mono transition-all border border-genomic-cyan/10 hover:border-genomic-cyan/25"
-                  aria-label={`View citation DOI ${doi} (opens in new tab)`}
-                  style={{ background: 'rgba(6,182,212,0.07)' }}
-                >
-                  {doi}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </motion.section>
   )
 }
