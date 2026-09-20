@@ -9,6 +9,7 @@ router = APIRouter()
 
 class AskBody(BaseModel):
     question: str
+    history: list[dict] | None = None
 
 
 @router.post("/ask")
@@ -16,7 +17,7 @@ async def ask(body: AskBody):
     if not body.question.strip():
         raise HTTPException(status_code=422, detail="question required")
     return StreamingResponse(
-        run_agent_stream(body.question),
+        run_agent_stream(body.question, body.history),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

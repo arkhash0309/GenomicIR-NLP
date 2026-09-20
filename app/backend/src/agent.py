@@ -149,22 +149,26 @@ def _sse(payload: dict) -> str:
     return f"data: {json.dumps(payload)}\n\n"
 
 
-async def run_agent_stream(question: str) -> AsyncGenerator[str, None]:
-    messages = [{"role": "user", "content": question}]
+async def run_agent_stream(question: str, history: list[dict] | None = None) -> AsyncGenerator[str, None]:
+    messages: list[dict] = list(history or [])
+    messages.append({"role": "user", "content": question})
+    retrieved: dict[str, dict] = {}
+    steps = 0
+
     while True:
+        steps += 1
         tool_calls: list[dict] = []
         text_buf = ""
         async with client.messages.stream(
             model=config.ANTHROPIC_MODEL, max_tokens=config.AGENT_MAX_TOKENS,
-            system=SYSTEM, tools=TOOLS, messages=messages
+            system=system_param(), tools=tools_param(), messages=messages
         ) as stream:
             async for event in stream:
                 etype = getattr(event, "type", None)
                 if etype == "content_block_start":
                     cb = event.content_block
                     if getattr(cb, "type", None) == "tool_use":
-                        tool_calls.append({"id": cb.id, "name": cb.name, "buf": ""})
-                        yield _sse({"type": "tool_call", "tool": cb.name, "input": {}})
+                        tool_calls.append({"id": str(cb.id), "name": str(cb.name), "buf": ""})
                 elif etype == "content_block_delta":
                     d = event.delta
                     if getattr(d, "type", None) == "text_delta":
@@ -181,7 +185,8 @@ async def run_agent_stream(question: str) -> AsyncGenerator[str, None]:
             except json.JSONDecodeError:
                 tc["input"] = {}
 
-        if stop == "tool_use" and tool_calls:
+        force_stop = steps >= config.AGENT_MAX_STEPS
+        if stop == "tool_use" and tool_calls and not force_stop:
             content = []
             if text_buf:
                 content.append({"type": "text", "text": text_buf})
@@ -192,15 +197,18 @@ async def run_agent_stream(question: str) -> AsyncGenerator[str, None]:
 
             tool_results = []
             for tc in tool_calls:
+                yield _sse({"type": "tool_call", "tool": tc["name"], "input": tc["input"]})
                 result = await asyncio.to_thread(_execute_tool, tc["name"], tc["input"])
+                for paper in _papers_from_tool_result(tc["name"], result):
+                    if paper["doi"]:
+                        retrieved[paper["doi"].lower()] = paper
                 for ge in _graph_events(tc["name"], result):
                     yield _sse(ge)
-                yield _sse({"type": "tool_result", "tool": tc["name"],
-                             "summary": result[:300]})
+                yield _sse({"type": "tool_result", "tool": tc["name"], "summary": result[:300]})
                 tool_results.append({"type": "tool_result",
                                       "tool_use_id": tc["id"], "content": result})
             messages.append({"role": "user", "content": tool_results})
         else:
-            dois = re.findall(r'10\.\d{4,}[^\s\]]+', text_buf)
-            yield _sse({"type": "done", "citations": list(set(dois))})
+            citations, unverified = _build_citations(text_buf, retrieved)
+            yield _sse({"type": "done", "citations": citations, "unverified": unverified})
             break
