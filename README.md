@@ -197,7 +197,7 @@ make sample      # build a small sample corpus
 
 ## 🗺️ Roadmap ideas
 
-- [ ] Pluggable vector stores (Qdrant / pgvector) behind the search interface
+- [x] Pluggable vector stores behind a `VectorStore` interface (FAISS default; Qdrant/pgvector adapter guide in `app/backend/src/retrieval/README.md`)
 - [ ] Persisted knowledge graph (Neo4j) instead of in-memory NetworkX
 - [ ] Streaming citations panel with inline paper previews
 - [ ] Evaluation harness for retrieval quality
