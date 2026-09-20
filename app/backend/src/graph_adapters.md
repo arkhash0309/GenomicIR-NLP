@@ -39,6 +39,8 @@ Entity names are deduplicated by an optional alias map, collapsing synonyms to a
 2. `canonicalize_entity(name)` looks it up in the alias map and returns the canonical form ("TP53") or the original if not found
 3. Graph nodes use canonical names (e.g., `"Gene:TP53"`), so synonyms always resolve to the same node
 
+> Note: changing `ENTITY_ALIAS_PATH` also requires deleting `entity_cache.json` to force re-extraction with the new aliases; otherwise the graph cache (keyed by the entity-cache hash) is not invalidated and will still reflect the old aliases.
+
 ### When to Use
 
 - **Yes:** if your corpus has known synonyms or legacy name variants

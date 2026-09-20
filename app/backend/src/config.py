@@ -28,6 +28,14 @@ def _path(env_var: str, default: Path) -> Path:
     return Path(raw).expanduser().resolve() if raw else default
 
 
+def _optional_path(env_var: str, default: Path) -> Path | None:
+    """Like _path, but an env value of 'none' (case-insensitive) means disabled."""
+    raw = os.getenv(env_var)
+    if raw is not None and raw.strip().lower() == "none":
+        return None
+    return Path(raw).expanduser().resolve() if raw else default
+
+
 def _split(env_var: str, default: str) -> list[str]:
     return [item.strip() for item in os.getenv(env_var, default).split(",") if item.strip()]
 
@@ -56,7 +64,8 @@ ENTITY_ALIAS_PATH = Path(_alias_raw).expanduser().resolve() if _alias_raw else N
 # Minimum shared papers for a co-occurrence edge.
 COOCCURRENCE_MIN = int(os.getenv("COOCCURRENCE_MIN", "2"))
 # Persisted knowledge graph (rebuilt when the entity-cache hash changes).
-GRAPH_CACHE_PATH = _path(
+# Set GRAPH_CACHE_PATH=none to disable persistence entirely.
+GRAPH_CACHE_PATH = _optional_path(
     "GRAPH_CACHE_PATH", Path(__file__).resolve().parent.parent / "data" / "graph.pkl"
 )
 
@@ -69,7 +78,8 @@ RETRIEVAL_CANDIDATES = int(os.getenv("RETRIEVAL_CANDIDATES", "20"))
 # Abstract characters fed to the reranker per (query, abstract) pair. Was 512.
 RERANK_MAX_CHARS = int(os.getenv("RERANK_MAX_CHARS", "512"))
 # Persisted BM25 index (rebuilt only when the corpus hash changes).
-BM25_CACHE_PATH = _path(
+# Set BM25_CACHE_PATH=none to disable persistence entirely.
+BM25_CACHE_PATH = _optional_path(
     "BM25_CACHE_PATH", Path(__file__).resolve().parent.parent / "data" / "bm25_index.pkl"
 )
 
