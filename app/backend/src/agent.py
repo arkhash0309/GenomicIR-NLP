@@ -98,6 +98,33 @@ def _execute_tool(name: str, inp: dict) -> str:
         return json.dumps({"error": str(e)})
 
 
+def _papers_from_tool_result(tool_name: str, result: str) -> list[dict]:
+    try:
+        data = json.loads(result)
+    except (json.JSONDecodeError, TypeError):
+        return []
+    rows = data if isinstance(data, list) else [data]
+    papers = []
+    for row in rows:
+        if isinstance(row, dict) and row.get("doi"):
+            papers.append({"doi": row["doi"], "title": row.get("title", ""),
+                           "paper_id": row.get("id")})
+    return papers
+
+
+def _build_citations(text: str, retrieved: dict[str, dict]) -> tuple[list[dict], list[str]]:
+    dois = list(dict.fromkeys(re.findall(r'10\.\d+[^\s\].]+', text)))
+    citations: list[dict] = []
+    unverified: list[str] = []
+    for doi in dois:
+        match = retrieved.get(doi.lower())
+        if match:
+            citations.append(match)
+        else:
+            unverified.append(doi)
+    return citations, unverified
+
+
 def _graph_events(tool_name: str, result: str) -> list[dict]:
     try:
         data = json.loads(result)
