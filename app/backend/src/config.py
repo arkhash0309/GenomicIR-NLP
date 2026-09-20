@@ -45,6 +45,21 @@ ENTITY_CACHE_PATH = _path(
     "ENTITY_CACHE_PATH", Path(__file__).resolve().parent.parent / "data" / "entity_cache.json"
 )
 
+# --- NER / graph ------------------------------------------------------------
+# Characters of each abstract fed to NER. Raised from the previous hardcoded
+# 1000 so more of each abstract contributes entities. Changing this invalidates
+# the entity cache — delete data/entity_cache.json to rebuild.
+NER_MAX_CHARS = int(os.getenv("NER_MAX_CHARS", "2000"))
+# Optional JSON alias map {"p53": "TP53", ...} used to canonicalize entity names.
+_alias_raw = os.getenv("ENTITY_ALIAS_PATH")
+ENTITY_ALIAS_PATH = Path(_alias_raw).expanduser().resolve() if _alias_raw else None
+# Minimum shared papers for a co-occurrence edge.
+COOCCURRENCE_MIN = int(os.getenv("COOCCURRENCE_MIN", "2"))
+# Persisted knowledge graph (rebuilt when the entity-cache hash changes).
+GRAPH_CACHE_PATH = _path(
+    "GRAPH_CACHE_PATH", Path(__file__).resolve().parent.parent / "data" / "graph.pkl"
+)
+
 # --- Retrieval --------------------------------------------------------------
 EMBED_MODEL = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
 RERANK_MODEL = os.getenv("RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
