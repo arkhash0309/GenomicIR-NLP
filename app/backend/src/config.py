@@ -49,6 +49,14 @@ ENTITY_CACHE_PATH = _path(
 EMBED_MODEL = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
 RERANK_MODEL = os.getenv("RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
 RRF_K = int(os.getenv("RRF_K", "60"))
+# Candidate breadth per retriever before fusion+rerank. Was hardcoded to 20.
+RETRIEVAL_CANDIDATES = int(os.getenv("RETRIEVAL_CANDIDATES", "20"))
+# Abstract characters fed to the reranker per (query, abstract) pair. Was 512.
+RERANK_MAX_CHARS = int(os.getenv("RERANK_MAX_CHARS", "512"))
+# Persisted BM25 index (rebuilt only when the corpus hash changes).
+BM25_CACHE_PATH = _path(
+    "BM25_CACHE_PATH", Path(__file__).resolve().parent.parent / "data" / "bm25_index.pkl"
+)
 
 # --- LLM / agent ------------------------------------------------------------
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
