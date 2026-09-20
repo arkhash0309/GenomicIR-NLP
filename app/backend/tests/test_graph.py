@@ -1,5 +1,6 @@
 import pytest
 
+from src import graph
 from src.graph import build_graph, get_entity_connections, get_papers_by_entity, get_subgraph, graph_stats
 from src.models import Paper
 from src.ner import _entity_cache
@@ -25,6 +26,8 @@ def mock_papers():
 
 @pytest.fixture(scope="module", autouse=True)
 def setup(mock_papers):
+    original_cache = dict(_entity_cache)
+    graph.GRAPH_CACHE_PATH = None
     _entity_cache.clear()
     _entity_cache.update({
         0: [{"name": "BRCA1", "type": "Gene"}, {"name": "breast cancer", "type": "Disease"}],
@@ -34,6 +37,13 @@ def setup(mock_papers):
     from src import data_store as ds
     ds._papers = mock_papers
     build_graph()
+    yield
+    # Cleanup
+    _entity_cache.clear()
+    _entity_cache.update(original_cache)
+    graph._G = None
+    graph._entity_nodes = []
+    graph._entity_papers = {}
 
 
 def test_graph_stats_has_keys():

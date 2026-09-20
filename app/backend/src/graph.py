@@ -1,11 +1,13 @@
+import pickle
 from itertools import combinations
+from pathlib import Path
 
 import networkx as nx
 
 from . import config
 from .data_store import get_papers
 from .models import GraphEdge, GraphNode, SubgraphResponse
-from .ner import get_paper_entities
+from .ner import entity_cache_hash, get_paper_entities
 
 _G: nx.DiGraph | None = None
 _entity_nodes: list[str] = []
@@ -15,6 +17,19 @@ GRAPH_CACHE_PATH = config.GRAPH_CACHE_PATH
 
 def build_graph() -> None:
     global _G, _entity_nodes, _entity_papers
+    cache_path = GRAPH_CACHE_PATH
+    want = entity_cache_hash()
+    if cache_path is not None and Path(cache_path).exists():
+        try:
+            with open(cache_path, "rb") as f:
+                payload = pickle.load(f)
+            if payload.get("hash") == want:
+                _G = payload["graph"]
+                _entity_papers = payload["entity_papers"]
+                _entity_nodes = list(_entity_papers.keys())
+                return
+        except Exception:
+            pass
     papers = get_papers()
     G = nx.DiGraph()
 
@@ -43,6 +58,11 @@ def build_graph() -> None:
     _G = G
     _entity_papers = entity_papers
     _entity_nodes = list(entity_papers.keys())
+
+    if cache_path is not None:
+        Path(cache_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(cache_path, "wb") as f:
+            pickle.dump({"hash": want, "graph": _G, "entity_papers": _entity_papers}, f)
 
 
 def graph_stats() -> dict:

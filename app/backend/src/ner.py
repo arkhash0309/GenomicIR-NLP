@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 
@@ -93,3 +94,13 @@ def get_paper_entities(paper_id: int) -> list[dict]:
 
 def extract_entities_from_text(text: str) -> list[dict]:
     return _extract(text)
+
+
+def entity_cache_hash() -> str:
+    h = hashlib.sha256()
+    for pid in sorted(_entity_cache):
+        h.update(str(pid).encode())
+        for ent in _entity_cache[pid]:
+            h.update(f"{ent['type']}:{ent['name']}".encode("utf-8", "ignore"))
+        h.update(b"\x00")
+    return h.hexdigest()
