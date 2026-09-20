@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 import re
 from typing import AsyncGenerator
@@ -48,6 +49,20 @@ Strategy: (1) extract key entities from the question, (2) hybrid_search for broa
 (3) use entity connections to expand via knowledge graph, (4) get_paper_details for top results,
 (5) write a grounded answer citing papers as [Author et al., DOI].
 Only claim what the papers support."""
+
+
+def system_param() -> list[dict]:
+    block: dict = {"type": "text", "text": SYSTEM}
+    if config.PROMPT_CACHING:
+        block["cache_control"] = {"type": "ephemeral"}
+    return [block]
+
+
+def tools_param() -> list[dict]:
+    tools = copy.deepcopy(TOOLS)
+    if config.PROMPT_CACHING and tools:
+        tools[-1]["cache_control"] = {"type": "ephemeral"}
+    return tools
 
 
 def _execute_tool(name: str, inp: dict) -> str:
