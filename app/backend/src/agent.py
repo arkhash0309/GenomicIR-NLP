@@ -113,7 +113,7 @@ def _papers_from_tool_result(tool_name: str, result: str) -> list[dict]:
 
 
 def _build_citations(text: str, retrieved: dict[str, dict]) -> tuple[list[dict], list[str]]:
-    dois = list(dict.fromkeys(re.findall(r'10\.\d+[^\s\].]+', text)))
+    dois = list(dict.fromkeys(re.findall(r'10\.\d{4,}[^\s\].]+', text)))
     citations: list[dict] = []
     unverified: list[str] = []
     for doi in dois:
