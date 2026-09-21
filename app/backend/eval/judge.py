@@ -3,8 +3,6 @@ from __future__ import annotations
 import json
 import re
 
-from src import config
-
 _INSTRUCTIONS = (
     "You are grading a research assistant's answer for FAITHFULNESS to the "
     "provided source contexts and CITATION ACCURACY. Respond with ONLY a JSON "
@@ -32,6 +30,8 @@ def parse_judge_response(text: str) -> dict:
 
 
 def judge_answer(question: str, answer: str, contexts: list[str], client) -> dict:
+    from src import config
+
     prompt = build_judge_prompt(question, answer, contexts)
     resp = client.messages.create(
         model=config.ANTHROPIC_MODEL,

@@ -44,7 +44,7 @@ test: ## Run the backend test suite
 	cd $(BACKEND) && pytest
 
 eval: ## Run retrieval evaluation on the sample gold set
-	cd app/backend && python -m eval.run --gold eval/data/sample_gold.jsonl --k 10
+	cd $(BACKEND) && python -m eval.run --gold eval/data/sample_gold.jsonl --k 10
 
 lint: lint-backend lint-frontend ## Lint backend + frontend
 
