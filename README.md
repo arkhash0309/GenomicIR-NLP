@@ -4,7 +4,7 @@
 
 ### Agentic GraphRAG over a scientific paper corpus — a template you can point at your own data.
 
-A Claude tool-use agent that hybrid-searches **7,070 bioRxiv genomics papers**, traverses a
+An LLM tool-use agent that hybrid-searches **7,070 bioRxiv genomics papers**, traverses a
 biomedical knowledge graph, and streams its reasoning into a live, force-directed D3 visualization.
 
 [![CI](https://github.com/arkhash0309/GenomicIR-NLP/actions/workflows/ci.yml/badge.svg)](https://github.com/arkhash0309/GenomicIR-NLP/actions/workflows/ci.yml)
@@ -35,7 +35,7 @@ biomedical knowledge graph, and streams its reasoning into a live, force-directe
 
 ## ✨ Features
 
-- 🤖 **Agentic research assistant** (`/ask`) — a Claude agent with five tools (hybrid search, entity
+- 🤖 **Agentic research assistant** (`/ask`) — an LLM agent with five tools (hybrid search, entity
   extraction, graph lookup, entity connections, paper details). It streams its reasoning trace and
   **builds a live D3 knowledge graph as it thinks**.
 - 🔎 **Hybrid search** (`/search`) — FAISS semantic + BM25 lexical, fused with Reciprocal Rank Fusion,
@@ -52,7 +52,7 @@ biomedical knowledge graph, and streams its reasoning into a live, force-directe
 flowchart LR
     U[User] -->|question| FE[React + Vite + D3 UI]
     FE -->|SSE stream| API[FastAPI]
-    API --> AG[Claude agent<br/>tool-use loop]
+    API --> AG[LLM agent<br/>tool-use loop]
 
     subgraph Tools
       HS[Hybrid search]
@@ -77,7 +77,7 @@ flowchart LR
 |---|---|
 | Frontend | React 18 · Vite · TailwindCSS · D3.js · Framer Motion |
 | Backend | Python 3.11 · FastAPI · Uvicorn · SSE streaming |
-| LLM | Anthropic Claude (tool use + streaming) — model configurable |
+| LLM | Tool-use + streaming (model configurable) |
 | Retrieval | FAISS · rank-bm25 · Reciprocal Rank Fusion · `cross-encoder/ms-marco-MiniLM-L-6-v2` |
 | NER | scispaCy `en_ner_bc5cdr_md` + `en_ner_jnlpba_md` |
 | Knowledge graph | NetworkX (in-memory, built at startup) |
@@ -85,7 +85,7 @@ flowchart LR
 ## 🚀 Quickstart
 
 ### Prerequisites
-- An [Anthropic API key](https://console.anthropic.com/)
+- An LLM API key for the `/ask` assistant (set as `ANTHROPIC_API_KEY`)
 - Either **Docker**, or **Python 3.11+** and **Node 18+**
 
 ### Option A — Docker (one command)
@@ -120,8 +120,8 @@ Sensible defaults reproduce the original genomics app out of the box.
 
 | Variable | Default | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | **Required.** Your Anthropic API key. |
-| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Any Claude model id. |
+| `ANTHROPIC_API_KEY` | — | **Required** for `/ask`. Your LLM API key. |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Model id for the `/ask` assistant. |
 | `AGENT_MAX_TOKENS` | `4096` | Max tokens per agent turn. |
 | `EMBED_MODEL` | `all-MiniLM-L6-v2` | Sentence-transformer for semantic search. |
 | `RERANK_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Cross-encoder reranker. |
@@ -162,7 +162,7 @@ abstract. A NetworkX graph links papers→entities (`mentions`) and entities→e
 (`co_occurs_with`, weighted by shared papers). The agent queries this graph to expand from an entity
 to its neighbors and back to supporting papers.
 
-**Agentic loop.** The Claude agent runs a streaming tool-use loop: it extracts entities, searches,
+**Agentic loop.** The agent runs a streaming tool-use loop: it extracts entities, searches,
 traverses the graph, pulls paper details, and writes a grounded answer with DOI citations. Each tool
 result is pushed to the browser over **Server-Sent Events**, so you watch the reasoning — and the
 graph — build in real time.
@@ -197,10 +197,10 @@ make sample      # build a small sample corpus
 
 ## 🗺️ Roadmap ideas
 
-- [ ] Pluggable vector stores (Qdrant / pgvector) behind the search interface
-- [ ] Persisted knowledge graph (Neo4j) instead of in-memory NetworkX
+- [x] Pluggable vector stores behind a `VectorStore` interface (FAISS default; Qdrant/pgvector adapter guide in `app/backend/src/retrieval/README.md`)
+- [x] Persisted knowledge graph — pickled cache keyed by the entity-cache hash (Neo4j adapter guide in `app/backend/src/graph_adapters.md`)
 - [ ] Streaming citations panel with inline paper previews
-- [ ] Evaluation harness for retrieval quality
+- [x] Evaluation harness for retrieval quality (`make eval`; recall@k · MRR · nDCG@k, opt-in answer-faithfulness judge — see `app/backend/eval/README.md`)
 
 Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 

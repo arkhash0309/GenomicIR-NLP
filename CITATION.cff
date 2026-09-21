@@ -10,7 +10,7 @@ abstract: >-
   An agentic GraphRAG application over 7,070 bioRxiv genomics papers, combining
   hybrid retrieval (FAISS semantic + BM25 lexical + reciprocal rank fusion +
   cross-encoder reranking), scispaCy biomedical NER, a NetworkX knowledge graph,
-  and a streaming Claude tool-use agent, with a React + D3 frontend.
+  and a streaming LLM tool-use agent, with a React + D3 frontend.
 keywords:
   - graphrag
   - retrieval-augmented-generation

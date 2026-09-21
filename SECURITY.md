@@ -20,7 +20,7 @@ work on a fix.
 
 ## Handling secrets
 
-This project uses an Anthropic API key. Never commit real keys — copy
-`.env.example` to `.env` (which is git-ignored) and keep your key there. If you
-believe a key has leaked, rotate it immediately in the
-[Anthropic console](https://console.anthropic.com/).
+This project uses an LLM API key (`ANTHROPIC_API_KEY`). Never commit real keys —
+copy `.env.example` to `.env` (which is git-ignored) and keep your key there. If
+you believe a key has leaked, rotate it immediately in your LLM provider's
+console.

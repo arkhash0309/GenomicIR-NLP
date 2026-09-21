@@ -28,6 +28,14 @@ def _path(env_var: str, default: Path) -> Path:
     return Path(raw).expanduser().resolve() if raw else default
 
 
+def _optional_path(env_var: str, default: Path) -> Path | None:
+    """Like _path, but an env value of 'none' (case-insensitive) means disabled."""
+    raw = os.getenv(env_var)
+    if raw is not None and raw.strip().lower() == "none":
+        return None
+    return Path(raw).expanduser().resolve() if raw else default
+
+
 def _split(env_var: str, default: str) -> list[str]:
     return [item.strip() for item in os.getenv(env_var, default).split(",") if item.strip()]
 
@@ -45,14 +53,43 @@ ENTITY_CACHE_PATH = _path(
     "ENTITY_CACHE_PATH", Path(__file__).resolve().parent.parent / "data" / "entity_cache.json"
 )
 
+# --- NER / graph ------------------------------------------------------------
+# Characters of each abstract fed to NER. Raised from the previous hardcoded
+# 1000 so more of each abstract contributes entities. Changing this invalidates
+# the entity cache — delete data/entity_cache.json to rebuild.
+NER_MAX_CHARS = int(os.getenv("NER_MAX_CHARS", "2000"))
+# Optional JSON alias map {"p53": "TP53", ...} used to canonicalize entity names.
+_alias_raw = os.getenv("ENTITY_ALIAS_PATH")
+ENTITY_ALIAS_PATH = Path(_alias_raw).expanduser().resolve() if _alias_raw else None
+# Minimum shared papers for a co-occurrence edge.
+COOCCURRENCE_MIN = int(os.getenv("COOCCURRENCE_MIN", "2"))
+# Persisted knowledge graph (rebuilt when the entity-cache hash changes).
+# Set GRAPH_CACHE_PATH=none to disable persistence entirely.
+GRAPH_CACHE_PATH = _optional_path(
+    "GRAPH_CACHE_PATH", Path(__file__).resolve().parent.parent / "data" / "graph.pkl"
+)
+
 # --- Retrieval --------------------------------------------------------------
 EMBED_MODEL = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
 RERANK_MODEL = os.getenv("RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
 RRF_K = int(os.getenv("RRF_K", "60"))
+# Candidate breadth per retriever before fusion+rerank. Was hardcoded to 20.
+RETRIEVAL_CANDIDATES = int(os.getenv("RETRIEVAL_CANDIDATES", "20"))
+# Abstract characters fed to the reranker per (query, abstract) pair. Was 512.
+RERANK_MAX_CHARS = int(os.getenv("RERANK_MAX_CHARS", "512"))
+# Persisted BM25 index (rebuilt only when the corpus hash changes).
+# Set BM25_CACHE_PATH=none to disable persistence entirely.
+BM25_CACHE_PATH = _optional_path(
+    "BM25_CACHE_PATH", Path(__file__).resolve().parent.parent / "data" / "bm25_index.pkl"
+)
 
 # --- LLM / agent ------------------------------------------------------------
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 AGENT_MAX_TOKENS = int(os.getenv("AGENT_MAX_TOKENS", "4096"))
+# Hard ceiling on tool-use rounds per question (guards the streaming loop).
+AGENT_MAX_STEPS = int(os.getenv("AGENT_MAX_STEPS", "8"))
+# Cache the static system prompt + tool schema across turns.
+PROMPT_CACHING = os.getenv("PROMPT_CACHING", "true").lower() in ("1", "true", "yes")
 
 # --- Corpus framing (human/LLM-facing labels) -------------------------------
 # Swap these to re-theme the assistant for a different domain or dataset.

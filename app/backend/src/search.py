@@ -1,41 +1,34 @@
 from typing import TYPE_CHECKING
 
-import faiss
-import numpy as np
-from rank_bm25 import BM25Okapi
-
 from . import config
 from .data_store import get_papers
 from .models import SearchResult
+from .retrieval.bm25_index import BM25LexicalIndex
+from .retrieval.faiss_store import FaissVectorStore
+from .retrieval.interfaces import LexicalIndex, VectorStore
 
 if TYPE_CHECKING:
-    from sentence_transformers import CrossEncoder, SentenceTransformer
+    from sentence_transformers import CrossEncoder
 
-_FAISS_PATH = config.FAISS_PATH
-_EMBED_MODEL = config.EMBED_MODEL
-_RERANK_MODEL = config.RERANK_MODEL
 _RRF_K = config.RRF_K
 
-_embedder: "SentenceTransformer | None" = None
 _reranker: "CrossEncoder | None" = None
-_faiss_index: faiss.Index | None = None
-_bm25: BM25Okapi | None = None
-
-
-def _tokenize(text: str) -> list[str]:
-    return text.lower().split()
+_vector_store: VectorStore | None = None
+_lexical_index: LexicalIndex | None = None
 
 
 def load_search_indexes() -> None:
-    global _embedder, _reranker, _faiss_index, _bm25
-    # Lazy import to avoid DLL loading at collection time on Windows
+    global _reranker, _vector_store, _lexical_index
+    # Lazy import to avoid DLL loading at collection time on Windows.
+    import faiss
     from sentence_transformers import CrossEncoder, SentenceTransformer
     papers = get_papers()
-    _embedder = SentenceTransformer(_EMBED_MODEL)
-    _reranker = CrossEncoder(_RERANK_MODEL)
-    _faiss_index = faiss.read_index(str(_FAISS_PATH))
+    embedder = SentenceTransformer(config.EMBED_MODEL)
+    _reranker = CrossEncoder(config.RERANK_MODEL)
+    faiss_index = faiss.read_index(str(config.FAISS_PATH))
+    _vector_store = FaissVectorStore(faiss_index, embedder)
     corpus = [p.title + " " + p.abstract for p in papers]
-    _bm25 = BM25Okapi([_tokenize(doc) for doc in corpus])
+    _lexical_index = BM25LexicalIndex.build(corpus, cache_path=config.BM25_CACHE_PATH)
 
 
 def _rrf(faiss_ids: list[int], bm25_ids: list[int], k: int = _RRF_K) -> list[tuple[int, float]]:
@@ -51,19 +44,15 @@ def hybrid_search(query: str, top_k: int = 5) -> list[SearchResult]:
     if not query.strip():
         return []
     papers = get_papers()
-    n = min(20, len(papers))
+    n = min(config.RETRIEVAL_CANDIDATES, len(papers))
 
-    vec = _embedder.encode([query])
-    _, faiss_ids_raw = _faiss_index.search(np.array(vec, dtype="float32"), n)
-    faiss_ids = [int(i) for i in faiss_ids_raw[0] if i >= 0]
-
-    bm25_scores = _bm25.get_scores(_tokenize(query))
-    bm25_ids = list(map(int, np.argsort(bm25_scores)[::-1][:n]))
+    faiss_ids = _vector_store.search(query, n)
+    bm25_ids = _lexical_index.search(query, n)
 
     fused = _rrf(faiss_ids, bm25_ids)[:max(10, top_k * 2)]
     candidate_ids = [doc_id for doc_id, _ in fused if doc_id < len(papers)]
 
-    pairs = [(query, papers[i].abstract[:512]) for i in candidate_ids]
+    pairs = [(query, papers[i].abstract[:config.RERANK_MAX_CHARS]) for i in candidate_ids]
     rerank_scores = _reranker.predict(pairs)
 
     ranked = sorted(zip(candidate_ids, rerank_scores), key=lambda x: x[1], reverse=True)

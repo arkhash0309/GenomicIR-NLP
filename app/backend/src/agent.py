@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 import re
 from typing import AsyncGenerator
@@ -50,6 +51,20 @@ Strategy: (1) extract key entities from the question, (2) hybrid_search for broa
 Only claim what the papers support."""
 
 
+def system_param() -> list[dict]:
+    block: dict = {"type": "text", "text": SYSTEM}
+    if config.PROMPT_CACHING:
+        block["cache_control"] = {"type": "ephemeral"}
+    return [block]
+
+
+def tools_param() -> list[dict]:
+    tools = copy.deepcopy(TOOLS)
+    if config.PROMPT_CACHING and tools:
+        tools[-1]["cache_control"] = {"type": "ephemeral"}
+    return tools
+
+
 def _execute_tool(name: str, inp: dict) -> str:
     try:
         if name == "hybrid_search":
@@ -83,6 +98,33 @@ def _execute_tool(name: str, inp: dict) -> str:
         return json.dumps({"error": str(e)})
 
 
+def _papers_from_tool_result(tool_name: str, result: str) -> list[dict]:
+    try:
+        data = json.loads(result)
+    except (json.JSONDecodeError, TypeError):
+        return []
+    rows = data if isinstance(data, list) else [data]
+    papers = []
+    for row in rows:
+        if isinstance(row, dict) and row.get("doi"):
+            papers.append({"doi": row["doi"], "title": row.get("title", ""),
+                           "paper_id": row.get("id")})
+    return papers
+
+
+def _build_citations(text: str, retrieved: dict[str, dict]) -> tuple[list[dict], list[str]]:
+    dois = list(dict.fromkeys(re.findall(r'10\.\d{4,}[^\s\].]+', text)))
+    citations: list[dict] = []
+    unverified: list[str] = []
+    for doi in dois:
+        match = retrieved.get(doi.lower())
+        if match:
+            citations.append(match)
+        else:
+            unverified.append(doi)
+    return citations, unverified
+
+
 def _graph_events(tool_name: str, result: str) -> list[dict]:
     try:
         data = json.loads(result)
@@ -107,22 +149,26 @@ def _sse(payload: dict) -> str:
     return f"data: {json.dumps(payload)}\n\n"
 
 
-async def run_agent_stream(question: str) -> AsyncGenerator[str, None]:
-    messages = [{"role": "user", "content": question}]
+async def run_agent_stream(question: str, history: list[dict] | None = None) -> AsyncGenerator[str, None]:
+    messages: list[dict] = list(history or [])
+    messages.append({"role": "user", "content": question})
+    retrieved: dict[str, dict] = {}
+    steps = 0
+
     while True:
+        steps += 1
         tool_calls: list[dict] = []
         text_buf = ""
         async with client.messages.stream(
             model=config.ANTHROPIC_MODEL, max_tokens=config.AGENT_MAX_TOKENS,
-            system=SYSTEM, tools=TOOLS, messages=messages
+            system=system_param(), tools=tools_param(), messages=messages
         ) as stream:
             async for event in stream:
                 etype = getattr(event, "type", None)
                 if etype == "content_block_start":
                     cb = event.content_block
                     if getattr(cb, "type", None) == "tool_use":
-                        tool_calls.append({"id": cb.id, "name": cb.name, "buf": ""})
-                        yield _sse({"type": "tool_call", "tool": cb.name, "input": {}})
+                        tool_calls.append({"id": str(cb.id), "name": str(cb.name), "buf": ""})
                 elif etype == "content_block_delta":
                     d = event.delta
                     if getattr(d, "type", None) == "text_delta":
@@ -139,7 +185,8 @@ async def run_agent_stream(question: str) -> AsyncGenerator[str, None]:
             except json.JSONDecodeError:
                 tc["input"] = {}
 
-        if stop == "tool_use" and tool_calls:
+        force_stop = steps >= config.AGENT_MAX_STEPS
+        if stop == "tool_use" and tool_calls and not force_stop:
             content = []
             if text_buf:
                 content.append({"type": "text", "text": text_buf})
@@ -150,15 +197,18 @@ async def run_agent_stream(question: str) -> AsyncGenerator[str, None]:
 
             tool_results = []
             for tc in tool_calls:
+                yield _sse({"type": "tool_call", "tool": tc["name"], "input": tc["input"]})
                 result = await asyncio.to_thread(_execute_tool, tc["name"], tc["input"])
+                for paper in _papers_from_tool_result(tc["name"], result):
+                    if paper["doi"]:
+                        retrieved[paper["doi"].lower()] = paper
                 for ge in _graph_events(tc["name"], result):
                     yield _sse(ge)
-                yield _sse({"type": "tool_result", "tool": tc["name"],
-                             "summary": result[:300]})
+                yield _sse({"type": "tool_result", "tool": tc["name"], "summary": result[:300]})
                 tool_results.append({"type": "tool_result",
                                       "tool_use_id": tc["id"], "content": result})
             messages.append({"role": "user", "content": tool_results})
         else:
-            dois = re.findall(r'10\.\d{4,}[^\s\]]+', text_buf)
-            yield _sse({"type": "done", "citations": list(set(dois))})
+            citations, unverified = _build_citations(text_buf, retrieved)
+            yield _sse({"type": "done", "citations": citations, "unverified": unverified})
             break

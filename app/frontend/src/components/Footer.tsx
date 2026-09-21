@@ -12,7 +12,7 @@ const NAV_SECTIONS = [
   {
     heading: 'Technology',
     links: [
-      { to: '/ask',     label: 'Claude 3.5 Sonnet' },
+      { to: '/ask',     label: 'LLM Tool-Use' },
       { to: '/search',  label: 'FAISS + BM25' },
       { to: '/explore', label: 'D3.js Visualisation' },
     ],
@@ -67,7 +67,7 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-2 mt-5">
               <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-[var(--text-25)] mr-1">Stack</span>
-              {['Claude', 'FAISS', 'spaCy', 'FastAPI', 'React'].map(t => (
+              {['LLM', 'FAISS', 'spaCy', 'FastAPI', 'React'].map(t => (
                 <span key={t}
                       className="text-[10px] font-mono glass px-2 py-0.5 rounded-md"
                       style={{ color: 'rgba(240,244,255,0.35)' }}>
@@ -110,7 +110,7 @@ export default function Footer() {
             NLP × Genomics × Agentic AI
           </p>
           <p className="text-[var(--text-20)] text-xs">
-            Built with Claude 3.5 Sonnet · 7,070 bioRxiv papers
+            7,070 bioRxiv papers · Hybrid retrieval + knowledge graph
           </p>
         </div>
       </div>

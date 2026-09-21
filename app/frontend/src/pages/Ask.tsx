@@ -48,7 +48,9 @@ export default function Ask() {
   const [active, setActive] = useState(false)
   const [trace, setTrace] = useState<TraceEntry[]>([])
   const [answer, setAnswer] = useState('')
-  const [citations, setCitations] = useState<string[]>([])
+  const [citations, setCitations] = useState<{ doi: string; title: string; paper_id: string }[]>([])
+  const [unverified, setUnverified] = useState<string[]>([])
+  const [history, setHistory] = useState<{ role: string; content: string }[]>([])
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const { nodes, edges, addNodes, addEdges, reset } = useGraph()
   useEffect(() => {
@@ -84,7 +86,8 @@ export default function Ask() {
       addNodes(e.nodes as GraphNode[])
       addEdges(e.edges as any[])
     } else if (e.type === 'done') {
-      setCitations(e.citations as string[])
+      setCitations((e.citations as { doi: string; title: string; paper_id: string }[]) ?? [])
+      setUnverified((e.unverified as string[]) ?? [])
       setActive(false)
     }
   }, [addNodes, addEdges, uid])
@@ -96,6 +99,7 @@ export default function Ask() {
     setTrace([])
     setAnswer('')
     setCitations([])
+    setUnverified([])
     setActive(true)
     traceSeq.current = 0
 
@@ -103,7 +107,7 @@ export default function Ask() {
     try {
       await stream(
         'http://localhost:8000/ask',
-        { question },
+        { question, history },
         (e) => {
           if (e.type === 'reasoning') {
             answerBuf += e.text as string
@@ -115,6 +119,13 @@ export default function Ask() {
           handleEvent(e)
         }
       )
+      if (answerBuf) {
+        setHistory(h => [
+          ...h,
+          { role: 'user', content: question },
+          { role: 'assistant', content: answerBuf },
+        ])
+      }
     } catch {
       toastError('Connection to research assistant failed — is the backend running?')
       setActive(false)
@@ -150,7 +161,7 @@ export default function Ask() {
           )}
         </div>
         <p className="text-[var(--text-40)] text-sm">
-          Claude agent with hybrid FAISS + BM25 retrieval and live knowledge graph construction
+          AI agent with hybrid FAISS + BM25 retrieval and live knowledge graph construction
         </p>
       </motion.header>
 
@@ -337,7 +348,45 @@ export default function Ask() {
         )}
       </AnimatePresence>
 
-      <AnswerCard answer={answer} citations={citations} />
+      <AnswerCard answer={answer} />
+
+      {/* Grounded citations from retrieved papers */}
+      {(citations.length > 0 || unverified.length > 0) && (
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="glass rounded-2xl px-6 py-5 mt-4"
+          aria-label="Citation sources"
+        >
+          <h3 className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/30 mb-3">
+            Citations
+          </h3>
+          {citations.length > 0 && (
+            <ul className="flex flex-col gap-2 list-none p-0 m-0 mb-3">
+              {citations.map(c => (
+                <li key={c.doi}>
+                  <a
+                    href={`/paper/${c.paper_id}`}
+                    className="citation text-sm text-genomic-cyan/80 hover:text-genomic-cyan transition-colors underline underline-offset-2"
+                    aria-label={`View paper: ${c.title}, DOI ${c.doi}`}
+                  >
+                    {c.title} · {c.doi}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+          {unverified.length > 0 && (
+            <p
+              className="citation-unverified text-xs text-genomic-amber/70 bg-genomic-amber/8 border border-genomic-amber/20 rounded-xl px-3 py-2"
+              role="note"
+            >
+              Unverified references (not found in retrieved papers): {unverified.join(', ')}
+            </p>
+          )}
+        </motion.section>
+      )}
     </div>
   )
 }

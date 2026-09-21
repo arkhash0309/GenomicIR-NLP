@@ -1,37 +1,68 @@
+import pickle
+from itertools import combinations
+from pathlib import Path
+
 import networkx as nx
 
+from . import config
 from .data_store import get_papers
 from .models import GraphEdge, GraphNode, SubgraphResponse
-from .ner import get_paper_entities
+from .ner import entity_cache_hash, get_paper_entities
 
 _G: nx.DiGraph | None = None
+_entity_nodes: list[str] = []
+_entity_papers: dict[str, list[int]] = {}
+GRAPH_CACHE_PATH = config.GRAPH_CACHE_PATH
 
 
 def build_graph() -> None:
-    global _G
+    global _G, _entity_nodes, _entity_papers
+    cache_path = GRAPH_CACHE_PATH
+    want = entity_cache_hash()
+    if cache_path is not None and Path(cache_path).exists():
+        try:
+            with open(cache_path, "rb") as f:
+                payload = pickle.load(f)
+            if payload.get("hash") == want:
+                _G = payload["graph"]
+                _entity_papers = payload["entity_papers"]
+                _entity_nodes = list(_entity_papers.keys())
+                return
+        except Exception:
+            pass
     papers = get_papers()
     G = nx.DiGraph()
 
     entity_papers: dict[str, list[int]] = {}
+    pair_counts: dict[tuple[str, str], int] = {}
 
     for paper in papers:
         pid = f"paper_{paper.id}"
         G.add_node(pid, kind="paper", label=paper.title[:60], paper_id=paper.id)
+        ekeys: set[str] = set()
         for ent in get_paper_entities(paper.id):
             ekey = f"{ent['type']}:{ent['name'].lower()}"
             if not G.has_node(ekey):
                 G.add_node(ekey, kind=ent["type"], label=ent["name"])
             G.add_edge(pid, ekey, rel="mentions")
             entity_papers.setdefault(ekey, []).append(paper.id)
+            ekeys.add(ekey)
+        for a, b in combinations(sorted(ekeys), 2):
+            pair_counts[(a, b)] = pair_counts.get((a, b), 0) + 1
 
-    keys = list(entity_papers.keys())
-    for i, k1 in enumerate(keys):
-        for k2 in keys[i + 1:]:
-            shared = len(set(entity_papers[k1]) & set(entity_papers[k2]))
-            if shared >= 2:
-                G.add_edge(k1, k2, rel="co_occurs_with", weight=shared)
-                G.add_edge(k2, k1, rel="co_occurs_with", weight=shared)
+    for (a, b), shared in pair_counts.items():
+        if shared >= config.COOCCURRENCE_MIN:
+            G.add_edge(a, b, rel="co_occurs_with", weight=shared)
+            G.add_edge(b, a, rel="co_occurs_with", weight=shared)
+
     _G = G
+    _entity_papers = entity_papers
+    _entity_nodes = list(entity_papers.keys())
+
+    if cache_path is not None:
+        Path(cache_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(cache_path, "wb") as f:
+            pickle.dump({"hash": want, "graph": _G, "entity_papers": _entity_papers}, f)
 
 
 def graph_stats() -> dict:
@@ -51,15 +82,11 @@ def get_papers_by_entity(name: str) -> list[int]:
     if _G is None:
         raise RuntimeError("Graph not built — call build_graph() first")
     needle = name.lower()
-    ids: list[int] = []
-    for node, data in _G.nodes(data=True):
-        if data.get("kind") != "paper" and needle in node.lower():
-            for pred in _G.predecessors(node):
-                if _G.nodes[pred].get("kind") == "paper":
-                    pid = _G.nodes[pred].get("paper_id")
-                    if pid is not None:
-                        ids.append(pid)
-    return list(set(ids))
+    ids: set[int] = set()
+    for node in _entity_nodes:
+        if needle in node:
+            ids.update(_entity_papers.get(node, []))
+    return list(ids)
 
 
 def get_entity_connections(entity: str) -> list[dict]:
@@ -67,15 +94,17 @@ def get_entity_connections(entity: str) -> list[dict]:
         raise RuntimeError("Graph not built — call build_graph() first")
     needle = entity.lower()
     conns: dict[str, dict] = {}
-    for node in _G.nodes:
-        if _G.nodes[node].get("kind") != "paper" and needle in node.lower():
-            for nbr in _G.successors(node):
-                edata = _G.edges[node, nbr]
-                if edata.get("rel") == "co_occurs_with":
-                    nd = _G.nodes[nbr]
-                    w = edata.get("weight", 1)
-                    if nbr not in conns or conns[nbr]["weight"] < w:
-                        conns[nbr] = {"name": nd.get("label", nbr), "type": nd.get("kind", "Entity"), "weight": w}
+    for node in _entity_nodes:
+        if needle not in node:
+            continue
+        for nbr in _G.successors(node):
+            edata = _G.edges[node, nbr]
+            if edata.get("rel") == "co_occurs_with":
+                nd = _G.nodes[nbr]
+                w = edata.get("weight", 1)
+                if nbr not in conns or conns[nbr]["weight"] < w:
+                    conns[nbr] = {"name": nd.get("label", nbr),
+                                  "type": nd.get("kind", "Entity"), "weight": w}
     return sorted(conns.values(), key=lambda x: x["weight"], reverse=True)[:20]
 
 
