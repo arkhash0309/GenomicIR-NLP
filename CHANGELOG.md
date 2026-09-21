@@ -40,4 +40,4 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Initial release: agentic GraphRAG over 7,070 bioRxiv genomics papers
   (FastAPI + React), with hybrid retrieval, scispaCy NER, a NetworkX knowledge
-  graph, and a streaming Claude agent.
+  graph, and a streaming LLM agent.

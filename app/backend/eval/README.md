@@ -1,6 +1,6 @@
 # Evaluation harness
 
-This module provides a retrieval quality evaluation suite for GenomicIR-NLP, with pure metrics (recall@k, MRR, nDCG@k) and an optional answer-faithfulness judge powered by Claude.
+This module provides a retrieval quality evaluation suite for GenomicIR-NLP, with pure metrics (recall@k, MRR, nDCG@k) and an optional answer-faithfulness judge powered by an LLM.
 
 ## Gold dataset format
 
@@ -118,7 +118,7 @@ ANTHROPIC_API_KEY="sk-..." python -m eval.run --gold eval/data/sample_gold.jsonl
 ```
 
 **Requirements:**
-- `ANTHROPIC_API_KEY` environment variable set to a valid Anthropic API key.
+- `ANTHROPIC_API_KEY` environment variable set to a valid API key.
 - Each query in the gold file must have `reference_answer`.
 - The retrieval results are used as source contexts for grading.
 

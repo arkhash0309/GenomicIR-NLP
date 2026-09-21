@@ -161,7 +161,7 @@ export default function Ask() {
           )}
         </div>
         <p className="text-[var(--text-40)] text-sm">
-          Claude agent with hybrid FAISS + BM25 retrieval and live knowledge graph construction
+          AI agent with hybrid FAISS + BM25 retrieval and live knowledge graph construction
         </p>
       </motion.header>
 

@@ -200,7 +200,7 @@ const features = [
     borderHover: 'group-hover:border-genomic-cyan/35',
     icon: <BrainIcon />,
     iconBg: 'bg-genomic-cyan/10 text-genomic-cyan',
-    desc: 'Agentic Claude with hybrid retrieval, live knowledge graph construction, and grounded paper citations.',
+    desc: 'Agentic AI with hybrid retrieval, live knowledge graph construction, and grounded paper citations.',
     perks: ['Agentic multi-step tool use', 'Live knowledge graph', 'Grounded citations'],
     badge: 'AI-Powered',
   },
@@ -243,7 +243,7 @@ const STAT_LABELS = [
 ] as const
 
 const techStack = [
-  { name: 'Claude 3.5', color: 'rgba(6,182,212,0.15)' },
+  { name: 'LLM Agent', color: 'rgba(6,182,212,0.15)' },
   { name: 'FAISS',      color: 'rgba(16,185,129,0.12)' },
   { name: 'BM25',       color: 'rgba(245,158,11,0.12)' },
   { name: 'D3.js',      color: 'rgba(168,85,247,0.12)' },
@@ -363,7 +363,7 @@ export default function Home() {
             className="text-[var(--text-45,rgba(240,244,255,0.45))] text-lg md:text-xl max-w-2xl mx-auto mb-4 leading-relaxed"
             style={{ color: 'rgba(240,244,255,0.48)' }}
           >
-            An agentic Claude-powered research assistant over
+            An agentic AI-powered research assistant over
           </motion.p>
           <motion.p
             initial={{ opacity: 0 }}
@@ -568,7 +568,7 @@ export default function Home() {
               <span className="text-gradient-static">Grounded in science.</span>
             </h2>
             <p className="text-[var(--text-50)] text-lg leading-relaxed mb-10">
-              Our Claude agent reasons over 7,000+ bioRxiv papers using hybrid retrieval
+              Our AI agent reasons over 7,000+ bioRxiv papers using hybrid retrieval
               and live knowledge graph construction — every answer is grounded and cited.
             </p>
 
