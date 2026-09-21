@@ -200,7 +200,7 @@ make sample      # build a small sample corpus
 - [x] Pluggable vector stores behind a `VectorStore` interface (FAISS default; Qdrant/pgvector adapter guide in `app/backend/src/retrieval/README.md`)
 - [x] Persisted knowledge graph — pickled cache keyed by the entity-cache hash (Neo4j adapter guide in `app/backend/src/graph_adapters.md`)
 - [ ] Streaming citations panel with inline paper previews
-- [ ] Evaluation harness for retrieval quality
+- [x] Evaluation harness for retrieval quality (`make eval`; recall@k · MRR · nDCG@k, opt-in answer-faithfulness judge — see `app/backend/eval/README.md`)
 
 Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 

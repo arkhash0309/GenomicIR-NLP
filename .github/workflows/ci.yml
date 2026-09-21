@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -40,7 +41,7 @@ jobs:
       - name: Install core dependencies
         run: pip install pandas pydantic python-dotenv networkx pytest pytest-asyncio
       - name: Run core tests
-        run: pytest tests/test_data_store.py tests/test_graph.py -q
+        run: pytest tests/test_data_store.py tests/test_graph.py tests/test_eval_dataset.py tests/test_eval_metrics.py tests/test_eval_retrieval.py tests/test_eval_report.py tests/test_eval_judge.py -q
         working-directory: app/backend
 
   frontend:
@@ -65,3 +66,22 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: app/frontend
+
+  eval-full:
+    name: Eval · full retrieval (manual)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -r app/backend/requirements.txt
+      - name: Build sample corpus
+        run: make sample
+      - name: Run retrieval eval
+        run: make eval
+        env:
+          DATA_DIR: data/sample/data
+          EMBEDDINGS_DIR: data/sample/embeddings
