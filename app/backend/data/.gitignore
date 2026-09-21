@@ -1,1 +1,3 @@
 entity_cache.json
+# Runtime cache artifacts built at startup (WS1/WS2) — never commit
+*.pkl
