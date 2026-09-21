@@ -29,7 +29,7 @@ def _tool_use_stream():
 async def test_loop_respects_max_steps(mock_papers, monkeypatch):
     from src import agent
     from src import data_store as ds
-    ds._papers = mock_papers
+    monkeypatch.setattr(ds, "_papers", mock_papers)
     monkeypatch.setattr(agent.config, "AGENT_MAX_STEPS", 2)
 
     with patch("src.agent.client") as client, \
@@ -51,7 +51,7 @@ async def test_loop_respects_max_steps(mock_papers, monkeypatch):
 async def test_history_is_prepended(monkeypatch, mock_papers):
     from src import agent
     from src import data_store as ds
-    ds._papers = mock_papers
+    monkeypatch.setattr(ds, "_papers", mock_papers)
     captured = {}
 
     def _capture(**kwargs):

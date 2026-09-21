@@ -44,6 +44,7 @@ def setup(mock_papers):
     graph._G = None
     graph._entity_nodes = []
     graph._entity_papers = {}
+    ds._reset_papers()
 
 
 def test_graph_stats_has_keys():

@@ -11,15 +11,15 @@ async def _async_iter(items):
 
 
 @pytest.mark.asyncio
-async def test_run_agent_stream_yields_sse_events(mock_papers):
+async def test_run_agent_stream_yields_sse_events(mock_papers, monkeypatch):
     from src import data_store as ds
     from src import ner as ner_module
-    ds._papers = mock_papers
-    ner_module._entity_cache = {
+    monkeypatch.setattr(ds, "_papers", mock_papers)
+    monkeypatch.setattr(ner_module, "_entity_cache", {
         0: [{"name": "breast cancer", "type": "Disease"}],
         1: [{"name": "CRISPR-Cas9", "type": "Chemical"}],
         2: [{"name": "TP53", "type": "Gene"}],
-    }
+    })
 
     fake_msg = MagicMock()
     fake_msg.stop_reason = "end_turn"
@@ -48,14 +48,14 @@ async def test_run_agent_stream_yields_sse_events(mock_papers):
 
 
 @pytest.mark.asyncio
-async def test_execute_tool_hybrid_search(mock_papers):
+async def test_execute_tool_hybrid_search(mock_papers, monkeypatch):
     import json
 
     from src import data_store as ds
     from src.agent import _execute_tool
     from src.models import SearchResult
 
-    ds._papers = mock_papers
+    monkeypatch.setattr(ds, "_papers", mock_papers)
     fake_result = SearchResult(paper=mock_papers[0], score=0.9, rank=0)
 
     with patch("src.agent.hybrid_search", return_value=[fake_result]):
