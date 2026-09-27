@@ -1,37 +1,37 @@
-const COLORS: Record<string, string> = {
-  Gene:     'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  Disease:  'bg-rose-500/20    text-rose-300    border-rose-500/30',
-  Chemical: 'bg-amber-500/20   text-amber-300   border-amber-500/30',
+import { cn } from '../lib/utils'
+
+export type EntityType = 'Gene' | 'Disease' | 'Chemical'
+
+const DOT: Record<EntityType, string> = {
+  Gene:     'bg-entity-gene',
+  Disease:  'bg-entity-disease',
+  Chemical: 'bg-entity-chemical',
 }
 
 interface Props {
   name: string
-  type: 'Gene' | 'Disease' | 'Chemical'
+  type: EntityType
   onClick?: () => void
+  selected?: boolean
 }
 
-export default function EntityChip({ name, type, onClick }: Props) {
-  const colorClass = COLORS[type] ?? COLORS.Gene
-
-  if (onClick) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={`${type}: ${name}`}
-        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border font-medium cursor-pointer hover:opacity-80 transition-opacity ${colorClass}`}
-      >
-        {name}
-      </button>
-    )
-  }
-
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border font-medium ${colorClass}`}
-      aria-label={`${type}: ${name}`}
-    >
+export default function EntityChip({ name, type, onClick, selected }: Props) {
+  const className = cn(
+    'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium text-fg',
+    selected ? 'border-accent/60 bg-accent/10' : 'border-line bg-surface-2',
+    onClick && 'transition-colors hover:border-line-strong',
+  )
+  const content = (
+    <>
+      <span className={cn('h-1.5 w-1.5 rounded-full', DOT[type] ?? DOT.Gene)} aria-hidden="true" />
       {name}
-    </span>
+      <span className="sr-only">({type})</span>
+    </>
+  )
+
+  return onClick ? (
+    <button type="button" onClick={onClick} aria-pressed={selected} className={className}>{content}</button>
+  ) : (
+    <span className={className}>{content}</span>
   )
 }

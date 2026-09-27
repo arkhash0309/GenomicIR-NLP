@@ -1,48 +1,97 @@
-import { motion } from 'framer-motion'
+import { useCallback, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { motion } from 'motion/react'
+import { ArrowUpRight, TriangleAlert } from 'lucide-react'
 import CopyButton from './CopyButton'
 import MarkdownContent from './MarkdownContent'
+import { CitationMarker, UnverifiedMarker } from './CitationMarker'
+import { segmentAnswer, type Citation } from '../lib/citations'
+import { bareDoi, doiUrl } from '../lib/doi'
 
-interface Props { answer: string }
+interface Props {
+  answer: string
+  citations: Citation[]
+  unverified: string[]
+  streaming: boolean
+}
 
-export default function AnswerCard({ answer }: Props) {
+export default function AnswerCard({ answer, citations, unverified, streaming }: Props) {
+  const renderText = useCallback((text: string, key: string): ReactNode => {
+    const segments = segmentAnswer(text, citations, unverified)
+    if (segments.length === 1 && segments[0].kind === 'text') return text
+    return (
+      <span key={key}>
+        {segments.map((s, i) =>
+          s.kind === 'text' ? s.text
+          : s.kind === 'cite' ? <CitationMarker key={i} n={s.n} citation={s.citation} />
+          : <UnverifiedMarker key={i} doi={s.doi} />,
+        )}
+      </span>
+    )
+  }, [citations, unverified])
+
   if (!answer) return null
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-2xl mt-4 overflow-hidden"
-      style={{
-        background: 'rgba(4,8,15,0.6)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        boxShadow: '0 0 0 1px rgba(6,182,212,0.08), 0 16px 48px rgba(0,0,0,0.3)',
-      }}
-      aria-label="Research answer"
-      aria-live="polite"
-      aria-atomic="false"
+      transition={{ duration: 0.25 }}
+      className="card"
+      aria-labelledby="answer-heading"
     >
-      {/* Header bar */}
-      <div className="flex items-center justify-between px-6 py-3.5 border-b"
-           style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(6,182,212,0.04)' }}>
-        <div className="flex items-center gap-2.5">
-          <div className="w-2 h-2 rounded-full bg-genomic-cyan animate-pulse" />
-          <h2 className="text-genomic-cyan font-semibold text-xs font-mono tracking-[0.15em] uppercase"
-              id="answer-heading">
-            Answer
-          </h2>
-        </div>
-        <CopyButton
-          text={answer}
-          label="Copy answer"
-          className="text-white/25 hover:text-white/55 px-2.5 py-1 glass rounded-lg text-xs transition-colors"
-        />
+      <header className="flex items-center justify-between border-b border-line px-5 py-3">
+        <h2 id="answer-heading" className="text-sm font-semibold">Answer</h2>
+        {!streaming && <CopyButton text={answer} label="Copy answer" showLabel />}
+      </header>
+
+      <div className="px-5 py-4" aria-live="polite" aria-busy={streaming}>
+        <MarkdownContent content={answer} renderText={renderText} />
+        {streaming && <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse rounded-sm bg-accent/70 align-middle" aria-hidden="true" />}
       </div>
 
-      {/* Body */}
-      <div className="px-6 py-5" aria-labelledby="answer-heading">
-        <MarkdownContent content={answer} />
-      </div>
+      {(citations.length > 0 || unverified.length > 0) && (
+        <footer className="border-t border-line px-5 py-4">
+          {citations.length > 0 && (
+            <>
+              <h3 className="eyebrow mb-2">Sources</h3>
+              <ol className="m-0 list-none space-y-2 p-0">
+                {citations.map((c, i) => (
+                  <li key={c.doi} className="flex gap-3 text-sm">
+                    <span className="mt-0.5 flex h-5 min-w-5 shrink-0 items-center justify-center rounded bg-accent/15 px-1 font-mono text-[0.7rem] text-accent">
+                      {i + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <Link to={`/paper/${c.paper_id}`} className="font-medium text-fg hover:text-accent">
+                        {c.title || bareDoi(c.doi)}
+                      </Link>
+                      <a
+                        href={doiUrl(c.doi)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ml-2 inline-flex items-center gap-0.5 font-mono text-xs text-subtle hover:text-fg"
+                      >
+                        {bareDoi(c.doi)}
+                        <ArrowUpRight size={12} aria-hidden="true" />
+                        <span className="sr-only">(opens in new tab)</span>
+                      </a>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+          {unverified.length > 0 && (
+            <p className="mt-3 flex items-start gap-2 rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-fg" role="note">
+              <TriangleAlert size={14} className="mt-px shrink-0 text-warn" aria-hidden="true" />
+              <span>
+                {unverified.length} cited DOI{unverified.length > 1 ? 's were' : ' was'} not among the retrieved
+                papers and could not be verified: <span className="font-mono">{unverified.join(', ')}</span>
+              </span>
+            </p>
+          )}
+        </footer>
+      )}
     </motion.section>
   )
 }

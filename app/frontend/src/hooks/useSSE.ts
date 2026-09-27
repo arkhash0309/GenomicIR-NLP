@@ -9,11 +9,14 @@ export interface SSEEvent {
 export function useSSE() {
   const abortRef = useRef<AbortController | null>(null)
 
+  /**
+   * POST `body` and feed each `data:` line to `onEvent`. Resolves when the
+   * stream ends or is cancelled; rejects on network/HTTP errors.
+   */
   const stream = useCallback(async (
     url: string,
     body: object,
     onEvent: (e: SSEEvent) => void,
-    onError?: (e: Error) => void
   ) => {
     abortRef.current?.abort()
     const controller = new AbortController()
@@ -25,7 +28,8 @@ export function useSSE() {
         body: JSON.stringify(body),
         signal: controller.signal,
       })
-      const reader = resp.body!.getReader()
+      if (!resp.ok || !resp.body) throw new Error(`${resp.status} ${resp.statusText}`)
+      const reader = resp.body.getReader()
       const dec = new TextDecoder()
       let buf = ''
       while (true) {
@@ -41,7 +45,7 @@ export function useSSE() {
         }
       }
     } catch (e) {
-      if ((e as Error).name !== 'AbortError') onError?.(e as Error)
+      if ((e as Error).name !== 'AbortError') throw e
     }
   }, [])
 

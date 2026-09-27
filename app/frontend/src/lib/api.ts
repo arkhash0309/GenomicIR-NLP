@@ -1,5 +1,6 @@
 // src/lib/api.ts
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const BASE = API_BASE
 
 export interface Paper { id: number; title: string; authors: string; doi: string; date: string; url: string; abstract: string; summary: string }
 export interface SearchResult { paper: Paper; score: number; rank: number }
