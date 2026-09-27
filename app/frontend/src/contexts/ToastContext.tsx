@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
+import { CircleCheck, CircleX, Info, X } from 'lucide-react'
 
 type ToastKind = 'error' | 'success' | 'info'
 
@@ -21,40 +22,32 @@ const ToastContext = createContext<ToastContextValue>({
   success: () => {},
 })
 
-const KIND_STYLE: Record<ToastKind, string> = {
-  error:   'border-red-500/60 bg-red-500/10 text-red-300',
-  success: 'border-genomic-emerald/60 bg-genomic-emerald/10 text-emerald-300',
-  info:    'border-genomic-cyan/60 bg-genomic-cyan/10 text-genomic-cyan',
-}
-
-const KIND_ICON: Record<ToastKind, string> = {
-  error: '✕',
-  success: '✓',
-  info: 'ℹ',
+const KIND_ICON: Record<ToastKind, ReactNode> = {
+  error:   <CircleX size={16} className="text-danger" aria-hidden="true" />,
+  success: <CircleCheck size={16} className="text-success" aria-hidden="true" />,
+  info:    <Info size={16} className="text-accent" aria-hidden="true" />,
 }
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 60, scale: 0.95 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 60, scale: 0.95 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-      className={`glass rounded-xl px-4 py-3 border flex items-start gap-3 min-w-72 max-w-sm shadow-lg ${KIND_STYLE[toast.kind]}`}
-      role="alert"
-      aria-live="assertive"
-      aria-atomic="true"
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 8 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+      className="card flex w-80 max-w-[calc(100vw-2rem)] items-start gap-3 px-4 py-3 shadow-lg"
+      role={toast.kind === 'error' ? 'alert' : 'status'}
     >
-      <span className="text-sm font-bold mt-0.5 shrink-0" aria-hidden="true">
-        {KIND_ICON[toast.kind]}
-      </span>
-      <span className="text-sm leading-snug flex-1">{toast.message}</span>
+      <span className="mt-0.5 shrink-0">{KIND_ICON[toast.kind]}</span>
+      <span className="flex-1 text-sm leading-snug text-fg">{toast.message}</span>
       <button
+        type="button"
         onClick={onDismiss}
-        className="shrink-0 opacity-50 hover:opacity-100 transition-opacity text-sm leading-none"
+        className="shrink-0 rounded p-0.5 text-subtle hover:text-fg"
         aria-label="Dismiss notification"
       >
-        ✕
+        <X size={14} aria-hidden="true" />
       </button>
     </motion.div>
   )
@@ -81,11 +74,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast, error, success }}>
       {children}
-      <div
-        className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 items-end"
-        aria-label="Notifications"
-        aria-live="polite"
-      >
+      <div className="fixed bottom-4 right-4 z-[100] flex flex-col items-end gap-2" aria-label="Notifications">
         <AnimatePresence>
           {toasts.map(t => (
             <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />

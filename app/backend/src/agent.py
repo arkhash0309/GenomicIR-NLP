@@ -8,7 +8,7 @@ import anthropic
 
 from . import config
 from .data_store import get_paper_by_id
-from .graph import get_entity_connections, get_papers_by_entity
+from .graph import entity_node_ids, get_entity_connections, get_papers_by_entity, paper_entity_ids
 from .ner import extract_entities_from_text, get_paper_entities
 from .search import hybrid_search
 
@@ -112,12 +112,24 @@ def _papers_from_tool_result(tool_name: str, result: str) -> list[dict]:
     return papers
 
 
+# DOIs contain dots (bioRxiv: 10.1101/2025.03.24.645116), so stop only at whitespace
+# and bracketing/separator characters; trailing sentence punctuation is stripped
+# in _normalize_doi. Kept in sync with DOI_IN_TEXT in app/frontend/src/lib/doi.ts.
+_DOI_RE = re.compile(r"10\.\d{4,9}/[^\s\]\[()<>{},;\"']+")
+_DOI_PREFIX_RE = re.compile(r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*)", re.IGNORECASE)
+
+
+def _normalize_doi(doi: str) -> str:
+    """Bare, lower-cased DOI: the corpus stores full https://doi.org/ URLs."""
+    return _DOI_PREFIX_RE.sub("", doi.strip()).rstrip(".:").lower()
+
+
 def _build_citations(text: str, retrieved: dict[str, dict]) -> tuple[list[dict], list[str]]:
-    dois = list(dict.fromkeys(re.findall(r'10\.\d{4,}[^\s\].]+', text)))
+    dois = list(dict.fromkeys(_normalize_doi(m) for m in _DOI_RE.findall(text)))
     citations: list[dict] = []
     unverified: list[str] = []
     for doi in dois:
-        match = retrieved.get(doi.lower())
+        match = retrieved.get(doi)
         if match:
             citations.append(match)
         else:
@@ -125,21 +137,35 @@ def _build_citations(text: str, retrieved: dict[str, dict]) -> tuple[list[dict],
     return citations, unverified
 
 
-def _graph_events(tool_name: str, result: str) -> list[dict]:
+def _graph_events(tool_name: str, tool_input: dict, result: str) -> list[dict]:
+    """Nodes and edges for the live graph on the Ask page.
+
+    Edges may point at nodes the client hasn't received yet (e.g. a paper's
+    entities); the client only draws an edge once both endpoints exist.
+    """
     try:
         data = json.loads(result)
         if tool_name == "hybrid_search":
             nodes = [{"id": f"paper_{p['id']}", "label": p["title"][:40], "type": "paper"}
                      for p in data]
-            return [{"type": "graph_update", "nodes": nodes, "edges": []}]
+            edges = [{"source": f"paper_{p['id']}", "target": eid, "type": "mentions", "weight": 1}
+                     for p in data for eid in paper_entity_ids(p["id"])]
+            return [{"type": "graph_update", "nodes": nodes, "edges": edges}]
         if tool_name == "extract_query_entities":
             nodes = [{"id": f"{e['type']}:{e['name'].lower()}", "label": e["name"], "type": e["type"]}
                      for e in data]
             return [{"type": "graph_update", "nodes": nodes, "edges": []}]
         if tool_name == "get_entity_connections":
-            nodes = [{"id": f"{c['type']}:{c['name'].lower()}", "label": c["name"], "type": c["type"]}
-                     for c in data[:12]]
-            return [{"type": "graph_update", "nodes": nodes, "edges": []}]
+            conns = data[:12]
+            centers = entity_node_ids(str(tool_input.get("entity", "")))
+            nodes = [{"id": cid, "label": tool_input["entity"], "type": cid.split(":", 1)[0]}
+                     for cid in centers]
+            nodes += [{"id": f"{c['type']}:{c['name'].lower()}", "label": c["name"], "type": c["type"]}
+                      for c in conns]
+            edges = [{"source": cid, "target": f"{c['type']}:{c['name'].lower()}",
+                      "type": "co_occurs_with", "weight": c.get("weight", 1)}
+                     for cid in centers for c in conns]
+            return [{"type": "graph_update", "nodes": nodes, "edges": edges}]
     except Exception:
         pass
     return []
@@ -201,8 +227,8 @@ async def run_agent_stream(question: str, history: list[dict] | None = None) -> 
                 result = await asyncio.to_thread(_execute_tool, tc["name"], tc["input"])
                 for paper in _papers_from_tool_result(tc["name"], result):
                     if paper["doi"]:
-                        retrieved[paper["doi"].lower()] = paper
-                for ge in _graph_events(tc["name"], result):
+                        retrieved[_normalize_doi(paper["doi"])] = paper
+                for ge in _graph_events(tc["name"], tc["input"], result):
                     yield _sse(ge)
                 yield _sse({"type": "tool_result", "tool": tc["name"], "summary": result[:300]})
                 tool_results.append({"type": "tool_result",

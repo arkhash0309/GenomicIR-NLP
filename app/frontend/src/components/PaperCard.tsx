@@ -1,138 +1,145 @@
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { ArrowUpRight, MessageSquareText } from 'lucide-react'
 import CopyButton from './CopyButton'
-import type { SearchResult } from '../lib/api'
+import {
+  MorphingDialog,
+  MorphingDialogClose,
+  MorphingDialogContainer,
+  MorphingDialogContent,
+  MorphingDialogDescription,
+  MorphingDialogOpen,
+  MorphingDialogSubtitle,
+  MorphingDialogTitle,
+  MorphingDialogTrigger,
+} from './ui/morphing-dialog'
+import type { Paper, SearchResult } from '../lib/api'
+import { bareDoi, doiUrl } from '../lib/doi'
 
-interface Props { result: SearchResult; showScore?: boolean }
+interface Props {
+  result: SearchResult
+  /** [min, max] score across the result set; enables the relevance bar. */
+  scoreRange?: [number, number]
+}
 
-function ScoreBadge({ score }: { score: number }) {
-  const pct   = Math.min(100, Math.round(score * 100))
-  const color =
-    pct >= 70 ? '#10b981' :
-    pct >= 45 ? '#06b6d4' :
-    '#f59e0b'
-  const label = pct >= 70 ? 'High' : pct >= 45 ? 'Mid' : 'Low'
+const isKnown = (v: string) => v && v !== 'N/A' && v !== 'nan'
 
+function Meta({ paper }: { paper: Paper }) {
+  const parts = [isKnown(paper.authors) && paper.authors, isKnown(paper.date) && paper.date].filter(Boolean)
+  if (parts.length === 0) return null
+  return <p className="truncate text-xs text-subtle">{parts.join(' · ')}</p>
+}
+
+function Links({ paper }: { paper: Paper }) {
   return (
-    <div
-      className="shrink-0 flex flex-col items-end gap-1.5"
-      aria-label={`Relevance: ${label} (${score.toFixed(3)})`}
-      title={`Relevance score: ${score.toFixed(3)}`}
-    >
-      <span className="text-[10px] font-mono tabular-nums" style={{ color }}>
-        {score.toFixed(3)}
-      </span>
-      <div className="relative w-1 h-12 rounded-full overflow-hidden bg-white/[0.06]">
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 rounded-full"
-          initial={{ height: 0 }}
-          animate={{ height: `${pct}%` }}
-          transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          style={{ background: color }}
-          aria-hidden="true"
-        />
-      </div>
-      <span className="text-[8px] font-mono uppercase tracking-wider" style={{ color: `${color}aa` }}>
-        {label}
-      </span>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+      {isKnown(paper.doi) && (
+        <span className="inline-flex min-w-0 items-center gap-1">
+          <a
+            href={doiUrl(paper.doi)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-w-0 items-center gap-0.5 font-mono text-subtle hover:text-fg"
+          >
+            <span className="truncate">{bareDoi(paper.doi)}</span>
+            <ArrowUpRight size={12} className="shrink-0" aria-hidden="true" />
+            <span className="sr-only">(opens in new tab)</span>
+          </a>
+          <CopyButton text={bareDoi(paper.doi)} label="Copy DOI" />
+        </span>
+      )}
+      {isKnown(paper.url) && (
+        <a href={paper.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-subtle hover:text-fg">
+          bioRxiv <ArrowUpRight size={12} aria-hidden="true" />
+          <span className="sr-only">(opens in new tab)</span>
+        </a>
+      )}
     </div>
   )
 }
 
-function ExternalLinkIcon() {
+/**
+ * Cross-encoder scores are unbounded logits, so the bar shows relevance
+ * relative to the other results rather than pretending to be a percentage.
+ */
+function Score({ score, range: [min, max] }: { score: number; range: [number, number] }) {
+  const pct = max > min ? 15 + 85 * ((score - min) / (max - min)) : 100
   return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-      <polyline points="15 3 21 3 21 9"/>
-      <line x1="10" y1="14" x2="21" y2="3"/>
-    </svg>
+    <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5" title="Cross-encoder relevance score (higher is better)">
+      <span className="font-mono text-xs tabular-nums text-muted">{score.toFixed(2)}</span>
+      <span className="h-1 w-12 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
+        <span className="block h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+      </span>
+      <span className="sr-only">Relevance score {score.toFixed(3)}</span>
+    </div>
   )
 }
 
-export default function PaperCard({ result, showScore }: Props) {
+export default function PaperCard({ result, scoreRange }: Props) {
   const { paper, score } = result
+
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
-      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-      className="group glass rounded-2xl p-5 hover:border-genomic-cyan/25 transition-all duration-300 relative overflow-hidden"
-      style={{ '--hover-glow': 'rgba(6,182,212,0.04)' } as React.CSSProperties}
-    >
-      {/* Hover background glow */}
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"
-        style={{ background: 'radial-gradient(ellipse at 30% 0%, rgba(6,182,212,0.05) 0%, transparent 60%)' }}
-        aria-hidden="true"
-      />
-
-      <div className="relative flex items-start gap-4">
-        <div className="flex-1 min-w-0">
-          {/* Title */}
-          <Link
-            to={`/paper/${paper.id}`}
-            className="block text-[var(--text-90)] font-semibold hover:text-genomic-cyan transition-colors line-clamp-2 leading-snug mb-2 text-[15px]"
-            aria-label={`View paper: ${paper.title}`}
-          >
-            {paper.title}
-          </Link>
-
-          {/* Authors + date */}
-          <div className="flex items-center gap-2 flex-wrap mb-3">
-            <span className="text-[var(--text-40)] text-xs truncate max-w-[280px]">
-              {paper.authors}
-            </span>
-            {paper.date && (
-              <>
-                <span className="text-white/15" aria-hidden="true">·</span>
-                <time dateTime={paper.date} className="text-[var(--text-30)] text-xs font-mono shrink-0">
-                  {paper.date}
-                </time>
-              </>
-            )}
+    <MorphingDialog transition={{ type: 'spring', bounce: 0.05, duration: 0.3 }}>
+      <MorphingDialogTrigger className="card p-4 transition-colors hover:border-line-strong">
+        <article className="flex items-start gap-4">
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <MorphingDialogTitle>
+              <MorphingDialogOpen className="text-left text-[15px] font-medium leading-snug text-fg hover:text-accent">
+                {paper.title}
+              </MorphingDialogOpen>
+            </MorphingDialogTitle>
+            <MorphingDialogSubtitle>
+              <Meta paper={paper} />
+            </MorphingDialogSubtitle>
+            <p className="line-clamp-2 text-sm leading-relaxed text-muted">{paper.abstract}</p>
+            <div className="pt-1"><Links paper={paper} /></div>
           </div>
+          {scoreRange && <Score score={score} range={scoreRange} />}
+        </article>
+      </MorphingDialogTrigger>
 
-          {/* Abstract */}
-          <p className="text-[var(--text-50)] text-sm leading-relaxed line-clamp-2 mb-4">
-            {paper.abstract}
-          </p>
-
-          {/* Footer links */}
-          <div className="flex items-center gap-3 pt-3 border-t border-white/[0.05]">
-            {paper.doi && (
-              <div className="flex items-center gap-1.5 min-w-0">
-                <a
-                  href={`https://doi.org/${paper.doi}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[11px] text-genomic-cyan/70 hover:text-genomic-cyan transition-colors font-mono truncate max-w-[180px] flex items-center gap-1"
-                  aria-label={`Open DOI ${paper.doi} (opens in new tab)`}
-                >
-                  <span className="truncate">{paper.doi}</span>
-                  <ExternalLinkIcon />
-                </a>
-                <CopyButton text={paper.doi} label="Copy DOI" className="text-white/25 hover:text-white/55 transition-colors shrink-0" />
+      <MorphingDialogContainer>
+        <MorphingDialogContent
+          aria-label={paper.title}
+          className="card relative flex max-h-[85vh] w-full max-w-2xl flex-col shadow-2xl"
+        >
+          <div className="overflow-y-auto p-6 pr-12">
+            <MorphingDialogTitle>
+              <h2 className="text-lg font-semibold leading-snug">{paper.title}</h2>
+            </MorphingDialogTitle>
+            <MorphingDialogSubtitle>
+              <div className="mt-1"><Meta paper={paper} /></div>
+            </MorphingDialogSubtitle>
+            <MorphingDialogDescription
+              variants={{
+                initial: { opacity: 0, y: 8 },
+                animate: { opacity: 1, y: 0, transition: { delay: 0.08 } },
+                exit:    { opacity: 0, y: 8 },
+              }}
+            >
+              <div className="mt-4 space-y-4">
+                <section>
+                  <h3 className="eyebrow mb-1.5">Abstract</h3>
+                  <p className="text-sm leading-relaxed text-fg">{paper.abstract}</p>
+                </section>
+                {paper.summary && (
+                  <section>
+                    <h3 className="eyebrow mb-1.5">Model summary (T5)</h3>
+                    <p className="text-sm leading-relaxed text-muted">{paper.summary}</p>
+                  </section>
+                )}
+                <Links paper={paper} />
+                <div className="flex flex-wrap gap-2 border-t border-line pt-4">
+                  <Link to={`/paper/${paper.id}`} className="btn-primary">Open paper</Link>
+                  <Link to={`/ask?q=${encodeURIComponent(`Summarise the findings of "${paper.title}"`)}`} className="btn-secondary">
+                    <MessageSquareText size={14} aria-hidden="true" /> Ask about it
+                  </Link>
+                </div>
               </div>
-            )}
-            {paper.url && (
-              <a
-                href={paper.url}
-                target="_blank"
-                rel="noreferrer"
-                className="ml-auto text-[11px] text-white/25 hover:text-white/55 transition-colors flex items-center gap-1 shrink-0"
-                aria-label="View full paper on bioRxiv (opens in new tab)"
-              >
-                bioRxiv <ExternalLinkIcon />
-              </a>
-            )}
+            </MorphingDialogDescription>
           </div>
-        </div>
-
-        {/* Score badge */}
-        {showScore && <ScoreBadge score={score} />}
-      </div>
-    </motion.article>
+          <MorphingDialogClose />
+        </MorphingDialogContent>
+      </MorphingDialogContainer>
+    </MorphingDialog>
   )
 }
