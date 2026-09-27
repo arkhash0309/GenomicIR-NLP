@@ -89,6 +89,22 @@ def get_papers_by_entity(name: str) -> list[int]:
     return list(ids)
 
 
+def entity_node_ids(name: str) -> list[str]:
+    """Ids of entity nodes whose name is exactly `name` (case-insensitive), any type."""
+    if _G is None:
+        return []
+    needle = name.lower()
+    return [n for n in _entity_nodes if n.split(":", 1)[1] == needle]
+
+
+def paper_entity_ids(paper_id: int) -> list[str]:
+    """Ids of the entity nodes a paper mentions."""
+    pid = f"paper_{paper_id}"
+    if _G is None or not _G.has_node(pid):
+        return []
+    return [n for n in _G.successors(pid) if _G.edges[pid, n].get("rel") == "mentions"]
+
+
 def get_entity_connections(entity: str) -> list[dict]:
     if _G is None:
         raise RuntimeError("Graph not built — call build_graph() first")
