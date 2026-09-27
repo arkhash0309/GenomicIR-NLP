@@ -25,3 +25,20 @@ def test_build_citations_separates_verified_and_unverified():
     citations, unverified = agent._build_citations(text, retrieved)
     assert citations == [{"doi": "10.1000/x", "title": "T", "paper_id": 3}]
     assert unverified == ["10.1000/hallucinated"]
+
+
+def test_build_citations_handles_dotted_biorxiv_dois_and_url_form():
+    # The corpus stores DOIs as full URLs; the model cites them bare.
+    stored = "https://doi.org/10.1101/2025.03.24.645116"
+    paper = {"doi": stored, "title": "Yarrowia", "paper_id": 0}
+    retrieved = {agent._normalize_doi(stored): paper}
+    text = "Assembled genomes [Lee et al., 10.1101/2025.03.24.645116]. Also doi:10.1101/2024.01.01.999."
+    citations, unverified = agent._build_citations(text, retrieved)
+    assert citations == [paper]
+    assert unverified == ["10.1101/2024.01.01.999"]
+
+
+def test_normalize_doi_strips_prefixes_case_and_trailing_punctuation():
+    assert agent._normalize_doi("https://doi.org/10.1101/ABC.1.") == "10.1101/abc.1"
+    assert agent._normalize_doi("http://dx.doi.org/10.1101/x") == "10.1101/x"
+    assert agent._normalize_doi(" doi: 10.1101/x ") == "10.1101/x"

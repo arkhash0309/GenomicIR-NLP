@@ -75,3 +75,13 @@ def test_get_subgraph_node_types_valid():
     valid_types = {"paper", "Gene", "Disease", "Chemical"}
     for node in result.nodes:
         assert node.type in valid_types
+
+
+def test_entity_node_ids_matches_exact_names_only():
+    assert graph.entity_node_ids("BRCA1") == ["Gene:brca1"]
+    assert graph.entity_node_ids("breast") == []
+
+
+def test_paper_entity_ids_lists_mentioned_entities():
+    assert sorted(graph.paper_entity_ids(0)) == ["Disease:breast cancer", "Gene:brca1"]
+    assert graph.paper_entity_ids(999) == []

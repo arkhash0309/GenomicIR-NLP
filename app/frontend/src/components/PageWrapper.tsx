@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
 
 interface Props {
@@ -6,15 +6,15 @@ interface Props {
   className?: string
 }
 
-export default function PageWrapper({ children, className = '' }: Props) {
+export default function PageWrapper({ children, className }: Props) {
   const reduced = useReducedMotion()
 
   return (
     <motion.div
-      initial={reduced ? false : { opacity: 0, scale: 0.993, filter: 'blur(3px)' }}
-      animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-      exit={reduced ? undefined : { opacity: 0, scale: 1.004, filter: 'blur(3px)' }}
-      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      initial={reduced ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={reduced ? undefined : { opacity: 0 }}
+      transition={{ duration: 0.15 }}
       className={className}
     >
       {children}

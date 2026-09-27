@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
+import { ArrowUp } from 'lucide-react'
 
 export default function BackToTop() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 400)
+    const onScroll = () => setVisible(window.scrollY > 600)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
@@ -19,18 +20,15 @@ export default function BackToTop() {
     <AnimatePresence>
       {visible && (
         <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
+          type="button"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
           onClick={scrollTop}
-          aria-label="Back to top of page"
-          title="Back to top"
-          className="fixed bottom-6 left-6 z-50 w-10 h-10 glass rounded-full flex items-center justify-center text-white/50 hover:text-white hover:border-white/30 transition-colors shadow-lg"
+          aria-label="Back to top"
+          className="card fixed bottom-4 left-4 z-50 flex h-9 w-9 items-center justify-center text-muted shadow-md hover:text-fg"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <polyline points="18 15 12 9 6 15"/>
-          </svg>
+          <ArrowUp size={16} aria-hidden="true" />
         </motion.button>
       )}
     </AnimatePresence>

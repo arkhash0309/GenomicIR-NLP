@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 
 interface Props {
   loading: boolean
@@ -10,8 +9,8 @@ export default function TopLoadingBar({ loading }: Props) {
 
   useEffect(() => {
     if (!loading) {
-      setWidth(100)
-      const t = setTimeout(() => setWidth(0), 400)
+      setWidth(w => (w > 0 ? 100 : 0))
+      const t = setTimeout(() => setWidth(0), 300)
       return () => clearTimeout(t)
     }
     setWidth(0)
@@ -21,26 +20,14 @@ export default function TopLoadingBar({ loading }: Props) {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
   }, [loading])
 
+  if (!loading && width === 0) return null
+
   return (
-    <AnimatePresence>
-      {(loading || width > 0) && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed top-0 left-0 right-0 z-[200] h-0.5"
-          aria-hidden="true"
-        >
-          <div
-            className="h-full bg-gradient-to-r from-genomic-cyan to-genomic-emerald transition-all ease-out"
-            style={{
-              width: `${width}%`,
-              transitionDuration: loading ? '600ms' : '250ms',
-            }}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div className="fixed inset-x-0 top-0 z-[200] h-0.5" aria-hidden="true">
+      <div
+        className="h-full bg-accent transition-all ease-out"
+        style={{ width: `${width}%`, transitionDuration: loading ? '600ms' : '250ms' }}
+      />
+    </div>
   )
 }

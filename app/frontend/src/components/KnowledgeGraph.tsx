@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import * as d3 from 'd3'
+import { Minus, Plus } from 'lucide-react'
 import type { GraphNode, GraphEdge } from '../lib/api'
+import { useTheme } from '../contexts/ThemeContext'
 
-const NODE_COLOR: Record<string, string> = {
-  paper: '#3b82f6', Gene: '#10b981', Disease: '#f43f5e', Chemical: '#f59e0b',
+const NODE_TOKEN: Record<string, string> = {
+  paper: '--entity-paper', Gene: '--entity-gene', Disease: '--entity-disease', Chemical: '--entity-chemical',
 }
 const NODE_RADIUS: Record<string, number> = {
-  paper: 10, Gene: 7, Disease: 7, Chemical: 7,
+  paper: 9, Gene: 6.5, Disease: 6.5, Chemical: 6.5,
 }
 
 interface Props {
@@ -19,16 +21,15 @@ interface Props {
 type SimNode = GraphNode & d3.SimulationNodeDatum
 type SimEdge = { source: SimNode | string; target: SimNode | string; type: string; weight: number }
 
-function getThemeEdgeColor() {
-  return document.documentElement.classList.contains('light')
-    ? 'rgba(15,23,42,0.18)'
-    : 'rgba(255,255,255,0.14)'
+/** Read a colour token from CSS so the graph follows the active theme. */
+function token(name: string, alpha = 1): string {
+  const rgb = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return rgb ? `rgb(${rgb} / ${alpha})` : '#888'
 }
-function getThemeNodeStroke() {
-  return document.documentElement.classList.contains('light')
-    ? 'rgba(15,23,42,0.22)'
-    : 'rgba(255,255,255,0.30)'
-}
+const nodeFill = (type: string) => token(NODE_TOKEN[type] ?? '--subtle')
+const edgeColor = () => token('--line-strong', 0.8)
+const nodeStroke = () => token('--canvas')
+const labelColor = () => token('--muted')
 
 export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }: Props) {
   const svgRef  = useRef<SVGSVGElement>(null)
@@ -36,6 +37,7 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
   const gRef    = useRef<SVGGElement | null>(null)
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const [scale, setScale] = useState(1)
+  const { theme, highContrast } = useTheme()
 
   const applyZoom = useCallback((factor: number) => {
     if (!svgRef.current || !zoomRef.current) return
@@ -88,20 +90,25 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
         .force('charge', d3.forceManyBody().strength(-180))
         .force('center', d3.forceCenter(w / 2, h / 2))
         .force('collision', d3.forceCollide(18))
+        // Weak pull toward the centre so unconnected nodes stay in view.
+        .force('x', d3.forceX(w / 2).strength(0.06))
+        .force('y', d3.forceY(h / 2).strength(0.06))
     }
 
     const sim = simRef.current
     sim.nodes(simNodes)
     ;(sim.force('link') as d3.ForceLink<SimNode, SimEdge>).links(simEdges)
     ;(sim.force('center') as d3.ForceCenter<SimNode>)?.x(w / 2).y(h / 2)
+    ;(sim.force('x') as d3.ForceX<SimNode>)?.x(w / 2)
+    ;(sim.force('y') as d3.ForceY<SimNode>)?.y(h / 2)
 
     g.selectAll<SVGLineElement, SimEdge>('.edge')
       .data(simEdges, d => `${d.source as string}-${d.target as string}`)
       .join(
         enter => enter.append('line').attr('class', 'edge')
-          .attr('stroke', getThemeEdgeColor())
-          .attr('stroke-width', d => Math.sqrt(d.weight || 1)),
-        update => update.attr('stroke', getThemeEdgeColor()),
+          .attr('stroke', edgeColor())
+          .attr('stroke-width', d => Math.min(3, 0.75 + Math.log1p(d.weight || 1) / 2)),
+        update => update.attr('stroke', edgeColor()),
         exit => exit.remove()
       )
 
@@ -128,10 +135,18 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
             })
           eg.append('circle')
             .attr('r', 0)
-            .attr('fill', d => NODE_COLOR[d.type] ?? '#6b7280')
-            .attr('stroke', getThemeNodeStroke())
+            .attr('fill', d => nodeFill(d.type))
+            .attr('stroke', nodeStroke())
             .attr('stroke-width', 1.5)
             .transition().duration(400).attr('r', d => NODE_RADIUS[d.type] ?? 7)
+          eg.append('text')
+            .attr('class', 'node-label')
+            .attr('x', d => (NODE_RADIUS[d.type] ?? 7) + 4)
+            .attr('y', 3.5)
+            .attr('font-size', 10.5)
+            .attr('fill', labelColor())
+            .style('pointer-events', 'none')
+            .text(d => (d.label.length > 28 ? `${d.label.slice(0, 27)}…` : d.label))
           eg.append('title').text(d => `${d.type}: ${d.label}`)
           return eg
         },
@@ -152,6 +167,22 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
     sim.alpha(0.4).restart()
   }, [nodes, edges, onNodeClick])
 
+  // Re-colour existing nodes/edges when the theme or contrast mode changes.
+  // Deferred a frame: ThemeProvider (a parent) applies the <html> class in its
+  // own effect, which runs after this one.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      if (!gRef.current) return
+      const g = d3.select(gRef.current)
+      g.selectAll<SVGLineElement, SimEdge>('.edge').attr('stroke', edgeColor())
+      g.selectAll<SVGCircleElement, SimNode>('.node circle')
+        .attr('fill', d => nodeFill(d.type))
+        .attr('stroke', nodeStroke())
+      g.selectAll<SVGTextElement, SimNode>('.node-label').attr('fill', labelColor())
+    })
+    return () => cancelAnimationFrame(id)
+  }, [theme, highContrast])
+
   return (
     <div className={`relative ${className ?? 'w-full h-full'}`}>
       <svg
@@ -165,28 +196,22 @@ export default function KnowledgeGraph({ nodes, edges, onNodeClick, className }:
       {/* Zoom controls for keyboard/pointer users */}
       {nodes.length > 0 && (
         <div
-          className="absolute bottom-3 left-3 flex items-center gap-1"
+          className="card absolute bottom-3 left-3 flex items-center overflow-hidden text-muted shadow-sm"
           role="group"
           aria-label="Graph zoom controls"
         >
-          <button
-            onClick={() => applyZoom(1.4)}
-            aria-label="Zoom in"
-            className="w-7 h-7 glass rounded flex items-center justify-center text-white/50 hover:text-white transition-colors text-sm font-bold"
-          >+</button>
-          <button
-            onClick={resetZoom}
-            aria-label="Reset zoom"
-            title="Reset zoom"
-            className="px-2 h-7 glass rounded flex items-center justify-center text-white/30 hover:text-white/60 transition-colors font-mono text-xs"
-          >
+          <button type="button" onClick={() => applyZoom(1 / 1.4)} aria-label="Zoom out"
+                  className="flex h-7 w-7 items-center justify-center hover:bg-surface-2 hover:text-fg">
+            <Minus size={14} aria-hidden="true" />
+          </button>
+          <button type="button" onClick={resetZoom} aria-label="Reset zoom" title="Reset zoom"
+                  className="h-7 border-x border-line px-2 font-mono text-xs tabular-nums hover:bg-surface-2 hover:text-fg">
             {Math.round(scale * 100)}%
           </button>
-          <button
-            onClick={() => applyZoom(1 / 1.4)}
-            aria-label="Zoom out"
-            className="w-7 h-7 glass rounded flex items-center justify-center text-white/50 hover:text-white transition-colors text-sm font-bold"
-          >−</button>
+          <button type="button" onClick={() => applyZoom(1.4)} aria-label="Zoom in"
+                  className="flex h-7 w-7 items-center justify-center hover:bg-surface-2 hover:text-fg">
+            <Plus size={14} aria-hidden="true" />
+          </button>
         </div>
       )}
     </div>

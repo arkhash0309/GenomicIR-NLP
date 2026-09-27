@@ -1,290 +1,159 @@
-import { useId, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, type FormEvent } from 'react'
+import { Network } from 'lucide-react'
 import { api, type SubgraphResponse, type GraphNode } from '../lib/api'
 import KnowledgeGraph from '../components/KnowledgeGraph'
-import EntityChip from '../components/EntityChip'
+import EntityChip, { type EntityType } from '../components/EntityChip'
 import Spinner from '../components/Spinner'
+import { AnimatedNumber } from '../components/ui/animated-number'
 import { useToast } from '../contexts/ToastContext'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 const EXAMPLES = [
-  { label: 'BRCA1 + breast cancer', query: 'BRCA1, breast cancer' },
-  { label: 'CRISPR + Cas9',         query: 'CRISPR, Cas9' },
-  { label: 'p53 + apoptosis',       query: 'p53, apoptosis' },
-  { label: 'Dopamine + Parkinson',  query: 'dopamine, Parkinson' },
+  'BRCA1, breast cancer',
+  'CRISPR, Cas9',
+  'p53, apoptosis',
+  'dopamine, Parkinson',
 ]
 
-function NetworkIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/>
-      <path d="M7 12h10M17 6.7l-6 4M17 17.3l-6-4"/>
-    </svg>
-  )
-}
+const LEGEND: [string, string][] = [
+  ['Paper',    'bg-entity-paper'],
+  ['Gene',     'bg-entity-gene'],
+  ['Disease',  'bg-entity-disease'],
+  ['Chemical', 'bg-entity-chemical'],
+]
 
 export default function GraphExplorer() {
   const [query, setQuery] = useState('')
   const [graph, setGraph] = useState<SubgraphResponse>({ nodes: [], edges: [] })
   const [selected, setSelected] = useState<GraphNode | null>(null)
   const [loading, setLoading] = useState(false)
-  const inputId = useId()
   const { error } = useToast()
-  useDocumentTitle('Graph Explorer')
+  useDocumentTitle('Graph explorer')
 
-  const explore = async (q?: string) => {
-    const target = q ?? query
+  const explore = async (target: string) => {
     if (!target.trim()) return
-    if (q) setQuery(q)
+    setQuery(target)
     setLoading(true)
     try {
       const names = target.split(',').map(s => s.trim()).filter(Boolean)
       const data = await api.subgraph(names)
       setGraph(data)
       setSelected(null)
-      if (data.nodes.length === 0) {
-        error('No entities found — try different names or check spelling.')
-      }
+      if (data.nodes.length === 0) error('None of those entities are in the graph. Try another spelling.')
     } catch {
-      error('Graph query failed — check that the backend is running on port 8000.')
+      error('Graph query failed. Is the backend running?')
     } finally {
       setLoading(false)
     }
   }
 
+  const submit = (e: FormEvent) => { e.preventDefault(); explore(query) }
+
   const entityNodes = graph.nodes.filter(n => n.type !== 'paper')
   const paperNodes  = graph.nodes.filter(n => n.type === 'paper')
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
-
-      {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="mb-10"
-      >
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-xl bg-genomic-violet/10 flex items-center justify-center text-genomic-violet">
-            <NetworkIcon />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Graph Explorer</h1>
-        </div>
-        <p className="text-[var(--text-40)] text-sm">
-          Explore the biomedical entity co-occurrence network extracted from 7,000+ paper abstracts
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight">Graph explorer</h1>
+        <p className="mt-1 text-sm text-muted">
+          Genes, diseases and chemicals extracted from abstracts with scispaCy, linked when they appear in the same paper.
         </p>
-      </motion.header>
+      </header>
 
-      {/* Input */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-        className="mb-8"
-      >
-        <div className="flex gap-3 p-1.5 glass rounded-2xl mb-3" role="group" aria-label="Entity search">
-          <label htmlFor={inputId} className="sr-only">
-            Comma-separated entity names (e.g. BRCA1, breast cancer)
-          </label>
-          <input
-            id={inputId}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && explore()}
-            placeholder="BRCA1, breast cancer, doxorubicin…"
-            aria-label="Enter comma-separated entity names to explore"
-            aria-describedby="explorer-hint"
-            className="flex-1 bg-transparent px-4 py-3 text-[var(--text-100)] placeholder-white/25 focus:outline-none text-sm"
-          />
-          <button
-            onClick={() => explore()}
-            disabled={loading || !query.trim()}
-            aria-label={loading ? 'Loading graph…' : 'Explore entity graph'}
-            aria-busy={loading}
-            className="px-5 py-2.5 bg-genomic-violet text-white font-semibold rounded-xl hover:bg-genomic-violet/90 disabled:opacity-40 transition-colors flex items-center gap-2 text-sm"
-            style={{ boxShadow: query.trim() ? '0 0 20px rgba(168,85,247,0.3)' : 'none' }}
-          >
-            {loading ? <Spinner size="sm" label="Loading graph…" /> : <NetworkIcon />}
-            <span>Explore</span>
-          </button>
-        </div>
+      <form onSubmit={submit} className="card mb-3 flex items-center gap-2 p-1.5 focus-within:border-accent/60 focus-within:ring-2 focus-within:ring-accent/20">
+        <Network size={16} className="ml-2 shrink-0 text-subtle" aria-hidden="true" />
+        <label htmlFor="graph-input" className="sr-only">Entities, comma-separated</label>
+        <input
+          id="graph-input"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Entities, comma-separated — e.g. BRCA1, breast cancer"
+          autoComplete="off"
+          className="min-w-0 flex-1 bg-transparent py-2 text-[15px] text-fg placeholder:text-subtle focus:outline-none"
+        />
+        <button type="submit" disabled={loading || !query.trim()} className="btn-primary min-w-[5.5rem] shrink-0 px-3">
+          {loading ? <Spinner size="sm" label="Loading graph…" /> : 'Explore'}
+        </button>
+      </form>
 
-        <div className="flex items-center gap-2 flex-wrap px-1">
-          <p id="explorer-hint" className="text-[11px] text-[var(--text-25)] font-mono mr-1">
-            Comma-separated entities
-          </p>
-          <span className="text-white/10">·</span>
-          {EXAMPLES.map(ex => (
-            <button
-              key={ex.query}
-              onClick={() => explore(ex.query)}
-              className="text-[11px] font-mono text-genomic-violet/60 hover:text-genomic-violet glass px-2.5 py-1 rounded-lg transition-colors hover:border-genomic-violet/20"
-            >
-              {ex.label}
+      <ul className="m-0 mb-8 flex list-none flex-wrap gap-1.5 p-0 px-1" aria-label="Examples">
+        {EXAMPLES.map(ex => (
+          <li key={ex}>
+            <button type="button" onClick={() => explore(ex)}
+                    className="rounded-md border border-line px-2.5 py-1 text-xs text-muted transition-colors hover:border-line-strong hover:text-fg">
+              {ex}
             </button>
-          ))}
-        </div>
-      </motion.div>
+          </li>
+        ))}
+      </ul>
 
-      {/* Live status */}
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {graph.nodes.length > 0
-          ? `Graph loaded: ${graph.nodes.length} nodes and ${graph.edges.length} connections`
-          : ''}
+      <div aria-live="polite" className="sr-only">
+        {graph.nodes.length > 0 ? `Graph loaded: ${graph.nodes.length} nodes, ${graph.edges.length} edges` : ''}
       </div>
 
-      {/* Empty state */}
-      <AnimatePresence>
-        {graph.nodes.length === 0 && !loading && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="rounded-2xl p-10 text-center max-w-lg mx-auto mt-4"
-            style={{
-              background: 'rgba(4,8,15,0.5)',
-              border: '1px solid rgba(168,85,247,0.1)',
-            }}
-          >
-            <div className="w-14 h-14 rounded-2xl bg-genomic-violet/8 flex items-center justify-center mx-auto mb-5 text-genomic-violet/40"
-                 style={{ background: 'rgba(168,85,247,0.07)' }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/>
-                <path d="M7 12h10M17 6.7l-6 4M17 17.3l-6-4"/>
-              </svg>
+      {graph.nodes.length === 0 && !loading && (
+        <div className="card flex flex-col items-center px-6 py-16 text-center">
+          <Network size={24} className="mb-3 text-subtle" aria-hidden="true" />
+          <p className="text-sm text-fg">Enter one or more entities to see what they co-occur with.</p>
+          <p className="mt-1 text-sm text-subtle">Drag nodes to rearrange; scroll to zoom.</p>
+        </div>
+      )}
+
+      {graph.nodes.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <section className="card relative h-[560px] overflow-hidden" aria-label="Entity co-occurrence graph">
+            <KnowledgeGraph nodes={graph.nodes} edges={graph.edges} onNodeClick={setSelected} className="h-full w-full" />
+            <ul className="card absolute bottom-3 right-3 m-0 flex list-none flex-col gap-1 p-2 text-xs text-muted" aria-label="Legend">
+              {LEGEND.map(([label, dot]) => (
+                <li key={label} className="flex items-center gap-1.5">
+                  <span className={`h-2 w-2 rounded-full ${dot}`} aria-hidden="true" />{label}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <aside className="space-y-3" aria-label="Graph details">
+            <dl className="card grid grid-cols-2 gap-px overflow-hidden bg-line p-0">
+              {[
+                ['Nodes', graph.nodes.length],
+                ['Edges', graph.edges.length],
+                ['Entities', entityNodes.length],
+                ['Papers', paperNodes.length],
+              ].map(([label, value]) => (
+                <div key={label} className="bg-surface px-4 py-3">
+                  <dt className="text-xs text-subtle">{label}</dt>
+                  <dd className="mt-0.5 text-lg font-semibold"><AnimatedNumber value={value as number} /></dd>
+                </div>
+              ))}
+            </dl>
+
+            {selected && (
+              <div className="card p-4" role="status">
+                <p className="eyebrow mb-1">Selected</p>
+                <p className="font-medium">{selected.label}</p>
+                <p className="text-xs text-subtle">{selected.type === 'paper' ? 'Paper' : selected.type}</p>
+              </div>
+            )}
+
+            <div className="card max-h-72 overflow-y-auto p-4">
+              <h2 className="eyebrow mb-2">Entities ({entityNodes.length})</h2>
+              <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+                {entityNodes.map(n => (
+                  <li key={n.id}>
+                    <EntityChip
+                      name={n.label}
+                      type={n.type as EntityType}
+                      selected={selected?.id === n.id}
+                      onClick={() => setSelected(n)}
+                    />
+                  </li>
+                ))}
+              </ul>
             </div>
-            <h2 className="text-[var(--text-65,rgba(240,244,255,0.65))] font-semibold mb-2">
-              Explore the entity network
-            </h2>
-            <p className="text-[var(--text-35,rgba(240,244,255,0.35))] text-sm mb-6 leading-relaxed">
-              Enter biomedical entity names above to see how genes, diseases,
-              and chemicals co-occur across 7,000+ papers.
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Graph + panel */}
-      <AnimatePresence>
-        {graph.nodes.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="grid grid-cols-1 lg:grid-cols-3 gap-4"
-          >
-            {/* Main graph */}
-            <div
-              className="lg:col-span-2 rounded-2xl overflow-hidden relative"
-              style={{
-                height: 600,
-                background: 'rgba(4,8,15,0.7)',
-                border: '1px solid rgba(168,85,247,0.12)',
-                boxShadow: '0 0 0 1px rgba(168,85,247,0.06), 0 24px 64px rgba(0,0,0,0.35)',
-              }}
-              aria-label={`Entity co-occurrence graph: ${graph.nodes.length} nodes, ${graph.edges.length} edges`}
-            >
-              {/* Header bar */}
-              <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] z-10 bg-[rgba(4,8,15,0.6)] backdrop-blur-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-genomic-violet" />
-                  <span className="text-[10px] font-mono text-white/30">entity.graph</span>
-                </div>
-                <span className="text-[10px] font-mono text-white/20">
-                  {graph.nodes.length}n · {graph.edges.length}e
-                </span>
-              </div>
-              <KnowledgeGraph
-                nodes={graph.nodes}
-                edges={graph.edges}
-                onNodeClick={setSelected}
-                className="w-full h-full pt-9"
-              />
-            </div>
-
-            {/* Side panel */}
-            <aside className="space-y-3" aria-label="Graph details">
-              {/* Summary */}
-              <div className="rounded-2xl p-4"
-                   style={{ background: 'rgba(4,8,15,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <h2 className="text-[10px] font-mono tracking-[0.2em] uppercase text-[var(--text-30)] mb-3">
-                  Summary
-                </h2>
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[var(--text-40)]">Total nodes</span>
-                    <span className="font-mono text-[var(--text-70)] tabular-nums">{graph.nodes.length}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[var(--text-40)]">Total edges</span>
-                    <span className="font-mono text-[var(--text-70)] tabular-nums">{graph.edges.length}</span>
-                  </div>
-                  <div className="w-full h-px my-1" style={{ background: 'rgba(255,255,255,0.05)' }} />
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[var(--text-40)]">Entities</span>
-                    <span className="font-mono text-genomic-violet tabular-nums">{entityNodes.length}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[var(--text-40)]">Papers</span>
-                    <span className="font-mono text-genomic-cyan tabular-nums">{paperNodes.length}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Selected node */}
-              <AnimatePresence>
-                {selected && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    className="rounded-2xl p-4"
-                    style={{
-                      background: 'rgba(168,85,247,0.06)',
-                      border: '1px solid rgba(168,85,247,0.15)',
-                    }}
-                    role="status"
-                    aria-label={`Selected node: ${selected.label}`}
-                  >
-                    <h2 className="text-[10px] font-mono tracking-[0.2em] uppercase text-genomic-violet/60 mb-2.5">
-                      Selected
-                    </h2>
-                    <p className="font-semibold text-[var(--text-90)] mb-2.5">{selected.label}</p>
-                    {selected.type !== 'paper' && (
-                      <EntityChip name={selected.type} type={selected.type as any} />
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Entity list */}
-              <div
-                className="rounded-2xl p-4 max-h-64 overflow-y-auto"
-                style={{ background: 'rgba(4,8,15,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}
-                aria-label="Entity nodes list"
-              >
-                <h2 className="text-[10px] font-mono tracking-[0.2em] uppercase text-[var(--text-30)] mb-3">
-                  Entity nodes ({entityNodes.length})
-                </h2>
-                <div className="flex flex-wrap gap-1.5" role="list" aria-label="Entities in graph">
-                  {entityNodes.map(n => (
-                    <div key={n.id} role="listitem">
-                      <EntityChip
-                        name={n.label}
-                        type={n.type as any}
-                        onClick={() => setSelected(n)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </aside>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </aside>
+        </div>
+      )}
     </div>
   )
 }
